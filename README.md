@@ -37,6 +37,8 @@ When you have download follow these steps:
 6. Try running the command fuzzylite and fuzzylite-test
 
 ## Running Gazebo
+
+
 In this project there are two files used to run Gazebo. The first file "gazebo_server.sh" launch the server part of gazebo. The second file "gazebo_client.sh" is launching the GUI and connecting to the server.
 
 There are to different worlds with can be launch as follow 
@@ -44,3 +46,24 @@ There are to different worlds with can be launch as follow
 bash gazebo_server.sh smallworld.world
 bash gazebo_server.sh bigworld.world
 ```
+## Git
+
+### initialization
+Go to desired git folder at own pc (cd something/something)
+
+clone path by $git clone url (verify by ls)
+Go inside folder and check status by $git status
+``` bash
+git checkout Development
+```
+
+to merge own code and download new code(stuff only happens at own pc), use
+``` bash
+git pull
+```
+to upload own code to Git
+
+``` bash
+git commit -m
+```
+
