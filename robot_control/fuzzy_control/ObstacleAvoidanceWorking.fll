@@ -1,0 +1,41 @@
+#File: ObstacleAvoidance.fll
+Engine: ObstacleAvoidance
+InputVariable: obstacle
+  enabled: true
+  range: -1.000 1.000
+  lock-range: false
+  term: left Ramp -1.000 1.000    # var fra -1 til 0 This means the ramp starts at (-1, 0) and the ramp end at (0,1)
+  term: right Ramp 1.000 -1.000 # var fra 1 til o
+  #term: front Triangle -0.500 0.000 0.500
+InputVariable: goal
+  enabled: true
+  range: 0.000 1.000
+  lock-range: false
+  term: left Ramp 1.000 0.000
+  term: right Ramp 0.000 1.000
+OutputVariable: mSteer
+  enabled: true
+  range: -0.500 0.500 # -1 til 1
+  lock-range: false
+  aggregation: Maximum
+  defuzzifier: Centroid 100
+  default: nan
+  lock-previous: false
+  term: left Ramp 0.500 -0.500
+  term: right Ramp -0.500 0.500
+RuleBlock: mamdani
+  enabled: true
+  conjunction: none
+  disjunction: none
+  implication: AlgebraicProduct
+  activation: General
+  rule: if obstacle is left then mSteer is right
+  rule: if obstacle is right then mSteer is left
+  #rule: if obstacle is front then mSteer is right
+
+  #rule: if obstacle is left and goal is left then mSteer is right
+  #rule: if obstacle is left and goal is right then mSteer is right
+  #rule: if obstacle is right and goal is left then mSteer is left
+  #rule: if obstacle is right and goal is right then mSteer is left
+
+
