@@ -2,34 +2,51 @@
 Engine: ObstacleAvoidance
 InputVariable: obstacle
   enabled: true
-  range: 0.000 1.000
+  range: -1.000 1.000
   lock-range: false
-  term: left Ramp 1.000 0.000
-  term: right Ramp 0.000 1.000
+  term: left Ramp 0.300 1.300    # var fra -1 til 0 This means the ramp starts at (-1, 0) and the ramp end at (0,1)
+  term: hard_left Triangle 0.000 0.300 0.600
+  term: front Triangle -0.300 0.000 0.300
+  term: hard_right Triangle -0.600 -0.300 0.000
+  term: right Ramp -0.300 -1.300 # var fra 1 til o
+
 InputVariable: goal
   enabled: true
   range: 0.000 1.000
   lock-range: false
   term: left Ramp 1.000 0.000
   term: right Ramp 0.000 1.000
+
 OutputVariable: mSteer
   enabled: true
-  range: 0.000 1.000
+  range: -0.500 0.500 # -1 til 1
   lock-range: false
   aggregation: Maximum
   defuzzifier: Centroid 100
   default: nan
   lock-previous: false
-  term: left Ramp 1.000 0.000
-  term: right Ramp 0.000 1.000
+  term: hard_left Ramp -0.300 -0.600
+  term: left Triangle -0.400 -0.200 0.000
+  term: right Triangle 0.000 0.200 0.400
+  term: hard_right Ramp 0.300 0.600
+
+
+
 RuleBlock: mamdani
   enabled: true
   conjunction: none
   disjunction: none
   implication: AlgebraicProduct
   activation: General
-  rule: if obstacle is left and goal is left then mSteer is right
-  rule: if obstacle is left and goal is right then mSteer is right
+  rule: if obstacle is left then mSteer is right
+  rule: if obstacle is hard_left then mSteer is hard_right
+  rule: if obstacle is right then mSteer is left
+  rule: if obstacle is hard_right then mSteer is hard_left
+  rule: if obstacle is front then mSteer is hard_right
 
-  rule: if obstacle is right and goal is left then mSteer is left
-  rule: if obstacle is right and goal is right then mSteer is left
+  #rule: if obstacle is left and goal is left then mSteer is right
+  #rule: if obstacle is left and goal is right then mSteer is right
+  #rule: if obstacle is right and goal is left then mSteer is left
+  #rule: if obstacle is right and goal is right then mSteer is left
+
+

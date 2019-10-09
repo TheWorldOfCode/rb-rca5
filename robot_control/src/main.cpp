@@ -4,7 +4,11 @@
 
 #include <opencv2/opencv.hpp>
 
+#include "fl/Headers.h"
+
 #include <iostream>
+#include <vector>
+#include <tuple>
 
 static boost::mutex mutex;
 
@@ -49,6 +53,8 @@ void cameraCallback(ConstImageStampedPtr &msg) {
   mutex.unlock();
 }
 
+std::vector<std::tuple<float,float>> test;//////////
+bool flag = false;
 void lidarCallback(ConstLaserScanStampedPtr &msg) {
 
   //  std::cout << ">> " << msg->DebugString() << std::endl;
@@ -76,6 +82,12 @@ void lidarCallback(ConstLaserScanStampedPtr &msg) {
   for (int i = 0; i < nranges; i++) {
     float angle = angle_min + i * angle_increment;
     float range = std::min(float(msg->scan().ranges(i)), range_max);
+    //////
+    if((range < 3) && (flag))
+        {
+        test.push_back(std::tuple<float, float>(angle, range));
+        }
+    //////
     //    double intensity = msg->scan().intensities(i);
     cv::Point2f startpt(200.5f + range_min * px_per_m * std::cos(angle),
                         200.5f - range_min * px_per_m * std::sin(angle));
@@ -86,6 +98,7 @@ void lidarCallback(ConstLaserScanStampedPtr &msg) {
 
     //    std::cout << angle << " " << range << " " << intensity << std::endl;
   }
+  flag=false;
   cv::circle(im, cv::Point(200, 200), 2, cv::Scalar(0, 0, 255));
   cv::putText(im, std::to_string(sec) + ":" + std::to_string(nsec),
               cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1.0,
@@ -108,8 +121,8 @@ int main(int _argc, char **_argv) {
   gazebo::transport::SubscriberPtr statSubscriber =
       node->Subscribe("~/world_stats", statCallback);
 
-  gazebo::transport::SubscriberPtr poseSubscriber =
-      node->Subscribe("~/pose/info", poseCallback);
+  //gazebo::transport::SubscriberPtr poseSubscriber =
+  //    node->Subscribe("~/pose/info", poseCallback);
 
   gazebo::transport::SubscriberPtr cameraSubscriber =
       node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallback);
@@ -135,33 +148,75 @@ int main(int _argc, char **_argv) {
   const int key_right = 83;
   const int key_esc = 27;
 
-  float speed = 0.0;
+  float speed = 0.5;//////////////////////
   float dir = 0.0;
 
   // Loop
+
+  ///////////////////
+    using namespace fl;
+    Engine* engine = FllImporter().fromFile("../fuzzy_control/ObstacleAvoidance.fll");// bemærk et niveau op, kunne også have flyttet .fll
+
+    std::string status;
+    if (not engine->isReady(&status))
+        throw Exception("[engine error] engine is not ready:n" + status, FL_AT);
+
+    InputVariable* obstacle = engine->getInputVariable("obstacle");
+    InputVariable* goal = engine->getInputVariable("goal");
+    OutputVariable* steer = engine->getOutputVariable("mSteer");
+
+
+  //////////////////
   while (true) {
-    gazebo::common::Time::MSleep(10);
+      flag=true;
+      while(flag);
 
-    mutex.lock();
-    int key = cv::waitKey(1);
-    mutex.unlock();
+      float closest=10;
+      int index=-1;
+      for(int i=0; i<test.size() ;i++)// finds closest range from lidar scanner
+          {
+             if(closest>std::get<1>(test[i]))
+                 {
+                 closest=std::get<1>(test[i]);
+                 index=i;
+                 }
+          }
 
-    if (key == key_esc)
-      break;
 
-    if ((key == key_up) && (speed <= 1.2f))
-      speed += 0.05;
-    else if ((key == key_down) && (speed >= -1.2f))
-      speed -= 0.05;
-    else if ((key == key_right) && (dir <= 0.4f))
-      dir += 0.05;
-    else if ((key == key_left) && (dir >= -0.4f))
-      dir -= 0.05;
-    else {
-      // slow down
-      //      speed *= 0.1;
-      //      dir *= 0.1;
-    }
+
+
+      obstacle->setValue(std::get<0>(test[index]));
+      std::cout<< "angle: "<< std::get<0>(test[index]) <<std::endl;
+      test.clear();
+
+      engine->process();
+      dir = steer->getValue();
+
+      std::cout << "output dir " << dir << std::endl;
+
+
+      gazebo::common::Time::MSleep(10);
+//
+//    mutex.lock();
+//    int key = cv::waitKey(1);
+//    mutex.unlock();
+//
+//    if (key == key_esc)
+//      break;
+//
+//    if ((key == key_up) && (speed <= 1.2f))
+//      speed += 0.05;
+//    else if ((key == key_down) && (speed >= -1.2f))
+//      speed -= 0.05;
+//    else if ((key == key_right) && (dir <= 0.4f))
+//      dir += 0.05;
+//    else if ((key == key_left) && (dir >= -0.4f))
+//      dir -= 0.05;
+//    else {
+//      // slow down
+//      //      speed *= 0.1;
+//      //      dir *= 0.1;
+//    }
 
     // Generate a pose
     ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
