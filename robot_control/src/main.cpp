@@ -183,6 +183,9 @@ Vision camera;//////////////////////////
 //// new subscriber
 //    gazebo::transport::SubscriberPtr cameraSubscriberNew =
 //            node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallbackNew);
+    // creates lidar subscriber
+    gazebo::transport::SubscriberPtr lidarSubscriber =
+            node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", lidarCallback);
 
     // creates subscriber to camera, with no magic
   gazebo::transport::SubscriberPtr cameraSubscriber =
@@ -191,9 +194,6 @@ Vision camera;//////////////////////////
     // creates subscriber to camera, with Hough circle transform
     gazebo::transport::SubscriberPtr cameraSubscriberHough =
             node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackHough, &camera);
-
-  gazebo::transport::SubscriberPtr lidarSubscriber =
-      node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", lidarCallback);
 
     // creates subscriber to FuzzyControl
   gazebo::transport::SubscriberPtr lidar_fuzzy_Subscriber =
@@ -217,7 +217,7 @@ Vision camera;//////////////////////////
   const int key_right = 83;
   const int key_esc = 27;
 
-  float speed = 0.0;//////////////////////
+  float speed = 0.25;//////////////////////
   float dir = 0.0;
 
   // Loop
