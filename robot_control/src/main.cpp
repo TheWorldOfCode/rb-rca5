@@ -9,9 +9,10 @@
 #include <tuple>
 
 #include "../includes/FuzzyControl.h"
+#include "../includes/Vision.h"
 
 
-static boost::mutex mutex;
+static boost::mutex mutex; /// copied to Vision, but is also needed to run lidar from main
 
 void statCallback(ConstWorldStatisticsPtr &_msg) {
   (void)_msg;
@@ -39,71 +40,71 @@ void poseCallback(ConstPosesStampedPtr &_msg) {
   }
 }
 
-void cameraCallback(ConstImageStampedPtr &msg) {
-
-  std::size_t width = msg->image().width();
-  std::size_t height = msg->image().height();
-  const char *data = msg->image().data().c_str();
-  cv::Mat im(int(height), int(width), CV_8UC3, const_cast<char *>(data));
-
-  im = im.clone();
-  cv::cvtColor(im, im, CV_RGB2BGR);
-
-  mutex.lock();
-  cv::imshow("camera", im);
-  mutex.unlock();
-}
+//void cameraCallback(ConstImageStampedPtr &msg) {
+//
+//  std::size_t width = msg->image().width();
+//  std::size_t height = msg->image().height();
+//  const char *data = msg->image().data().c_str();
+//  cv::Mat im(int(height), int(width), CV_8UC3, const_cast<char *>(data));
+//
+//  im = im.clone();
+//  cv::cvtColor(im, im, CV_RGB2BGR);
+//
+//  mutex.lock();
+//  cv::imshow("camera", im);
+//  mutex.unlock();
+//}
 // new is a temp name
-void cameraCallbackNew(ConstImageStampedPtr &msg) {
-
-    std::size_t width = msg->image().width();
-    std::size_t height = msg->image().height();
-    const char *data = msg->image().data().c_str();
-    cv::Mat im(int(height), int(width), CV_8UC3, const_cast<char *>(data));
-
-    im = im.clone();
-
-
-
-    cv::cvtColor(im, im, CV_RGB2GRAY);
-
-    GaussianBlur(im, im, cv::Size(9, 9), 2, 0);
-
-    ////
-    std::vector<cv::Vec3f> circles;
-    static cv::Point current(-1, -1);
-
-    /// Apply the Hough Transform to find the circles
-    //
-    HoughCircles(im, circles, CV_HOUGH_GRADIENT,
-                 1,   // accumulator resolution (size of the image / 2)
-                 3000,  // minimum distance between two circles
-                 20, // Canny high threshold
-                 30, // minimum number of votes
-                 0, 0); // min and max radius 8 15
-
-    /// Draw the circles detected
-    for (size_t i = 0; i < circles.size(); i++)
-        {
-        cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-        int radius = cvRound(circles[i][2]);
-        // circle center
-        circle(im, center, 3, cv::Scalar(0, 255, 0), -1, 8, 0);
-        // circle outline
-        circle(im, center, radius, cv::Scalar(0, 0, 255), 3, 8, 0);
-
-//        if (current != center)
-//            {
-//            std::cout << "Position of the white ball is:" << center << std::endl; //
-//            current = center;
-//            }
-        }
-    ////
-
-    mutex.lock();
-    cv::imshow("New camera", im);// temp name
-    mutex.unlock();
-}
+//void cameraCallbackNew(ConstImageStampedPtr &msg) {
+//
+//    std::size_t width = msg->image().width();
+//    std::size_t height = msg->image().height();
+//    const char *data = msg->image().data().c_str();
+//    cv::Mat im(int(height), int(width), CV_8UC3, const_cast<char *>(data));
+//
+//    im = im.clone();
+//
+//
+//
+//    cv::cvtColor(im, im, CV_RGB2GRAY);
+//
+//    GaussianBlur(im, im, cv::Size(9, 9), 2, 0);
+//
+//    ////
+//    std::vector<cv::Vec3f> circles;
+//    static cv::Point current(-1, -1);
+//
+//    /// Apply the Hough Transform to find the circles
+//    //
+//    HoughCircles(im, circles, CV_HOUGH_GRADIENT,
+//                 1,   // accumulator resolution (size of the image / 2)
+//                 3000,  // minimum distance between two circles
+//                 20, // Canny high threshold
+//                 30, // minimum number of votes
+//                 0, 0); // min and max radius 8 15
+//
+//    /// Draw the circles detected
+//    for (size_t i = 0; i < circles.size(); i++)
+//        {
+//        cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+//        int radius = cvRound(circles[i][2]);
+//        // circle center
+//        circle(im, center, 3, cv::Scalar(0, 255, 0), -1, 8, 0);
+//        // circle outline
+//        circle(im, center, radius, cv::Scalar(0, 0, 255), 3, 8, 0);
+//
+////        if (current != center)
+////            {
+////            std::cout << "Position of the white ball is:" << center << std::endl; //
+////            current = center;
+////            }
+//        }
+//    ////
+//
+//    mutex.lock();
+//    cv::imshow("New camera", im);// temp name
+//    mutex.unlock();
+//}
 
 void lidarCallback(ConstLaserScanStampedPtr &msg) {
 
@@ -163,6 +164,8 @@ int main(int _argc, char **_argv) {
 
 FuzzyControl controller;
 
+Vision camera;//////////////////////////
+
 
   // Create our node for communication
   gazebo::transport::NodePtr node(new gazebo::transport::Node());
@@ -175,15 +178,24 @@ FuzzyControl controller;
 //  gazebo::transport::SubscriberPtr poseSubscriber =
 //      node->Subscribe("~/pose/info", poseCallback);
 
+//  gazebo::transport::SubscriberPtr cameraSubscriber =
+//      node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallback);
+//// new subscriber
+//    gazebo::transport::SubscriberPtr cameraSubscriberNew =
+//            node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallbackNew);
+
+    // creates subscriber to camera, with no magic
   gazebo::transport::SubscriberPtr cameraSubscriber =
-      node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallback);
-// new subscriber
-    gazebo::transport::SubscriberPtr cameraSubscriberNew =
-            node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallbackNew);
+      node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackRaw, &camera);
+
+    // creates subscriber to camera, with Hough circle transform
+    gazebo::transport::SubscriberPtr cameraSubscriberHough =
+            node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackHough, &camera);
 
   gazebo::transport::SubscriberPtr lidarSubscriber =
       node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", lidarCallback);
 
+    // creates subscriber to FuzzyControl
   gazebo::transport::SubscriberPtr lidar_fuzzy_Subscriber =
           node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", &FuzzyControl::lidarCallback, &controller);
 
@@ -211,7 +223,7 @@ FuzzyControl controller;
   // Loop
   while (true) {
 
-      controller.move(speed,dir);
+      controller.move(speed,dir);///// calls move in FuzzyControl class
 
       gazebo::common::Time::MSleep(10);
 //
