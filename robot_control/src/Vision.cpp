@@ -44,9 +44,16 @@ void Vision::cameraCallbackHough(ConstImageStampedPtr &msg)
     HoughCircles(im, circles, CV_HOUGH_GRADIENT,
                  1,   // accumulator resolution (size of the image / 2)
                  3000,  // minimum distance between two circles
-                 20, // Canny high threshold
+                 15, // Canny high threshold
                  30, // minimum number of votes
-                 0, 0); // min and max radius 8 15
+                 0, 0); // min and max radius
+
+        // the following values work okay, but not perfect
+//            1,   // accumulator resolution (size of the image / 2)
+//            3000,  // minimum distance between two circles
+//            20, // Canny high threshold
+//            30, // minimum number of votes
+//            0, 0); // min and max radius
 
     /// Draw the circles detected
     for (size_t i = 0; i < circles.size(); i++)
