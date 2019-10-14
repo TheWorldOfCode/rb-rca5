@@ -4,11 +4,12 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "fl/Headers.h"
-
 #include <iostream>
 #include <vector>
 #include <tuple>
+
+#include "../includes/FuzzyControl.h"
+
 
 static boost::mutex mutex;
 
@@ -104,45 +105,6 @@ void cameraCallbackNew(ConstImageStampedPtr &msg) {
     mutex.unlock();
 }
 
-std::vector<std::tuple<float,float>> test;//////////
-bool flag = false;
-void lidar_fuzzy_callback(ConstLaserScanStampedPtr &msg) {
-
-  //  std::cout << ">> " << msg->DebugString() << std::endl;
-  float angle_min = float(msg->scan().angle_min());
-  //  double angle_max = msg->scan().angle_max();
-  float angle_increment = float(msg->scan().angle_step());
-
-  float range_min = float(msg->scan().range_min());
-  float range_max = float(msg->scan().range_max());
-
-  int sec = msg->time().sec();
-  int nsec = msg->time().nsec();
-
-  int nranges = msg->scan().ranges_size();
-  int nintensities = msg->scan().intensities_size();
-
-  assert(nranges == nintensities);
-
-  int width = 400;
-  int height = 400;
-  float px_per_m = 200 / range_max;
-
-  cv::Mat im(height, width, CV_8UC3);
-  im.setTo(0);
-  for (int i = 0; i < nranges; i++) {
-    float angle = angle_min + i * angle_increment;
-    float range = std::min(float(msg->scan().ranges(i)), range_max);
-    //////
-    if((range < 3) && (flag))
-        {
-        test.push_back(std::tuple<float, float>(angle, range));
-        }
-    //////
-
-  }
-  flag=false;
-}
 void lidarCallback(ConstLaserScanStampedPtr &msg) {
 
     //  std::cout << ">> " << msg->DebugString() << std::endl;
@@ -199,6 +161,9 @@ int main(int _argc, char **_argv) {
   // Load gazebo
   gazebo::client::setup(_argc, _argv);
 
+FuzzyControl controller;
+
+
   // Create our node for communication
   gazebo::transport::NodePtr node(new gazebo::transport::Node());
   node->Init();
@@ -219,8 +184,8 @@ int main(int _argc, char **_argv) {
   gazebo::transport::SubscriberPtr lidarSubscriber =
       node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", lidarCallback);
 
-    gazebo::transport::SubscriberPtr lidar_fuzzy_Subscriber =
-            node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", lidar_fuzzy_callback);
+  gazebo::transport::SubscriberPtr lidar_fuzzy_Subscriber =
+          node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", &FuzzyControl::lidarCallback, &controller);
 
   // Publish to the robot vel_cmd topic
   gazebo::transport::PublisherPtr movementPublisher =
@@ -244,56 +209,9 @@ int main(int _argc, char **_argv) {
   float dir = 0.0;
 
   // Loop
-
-  ///////////////////
-    using namespace fl;
-    Engine* engine = FllImporter().fromFile("../fuzzy_control/ObstacleAvoidance.fll");// bemærk et niveau op, kunne også have flyttet .fll
-
-    std::string status;
-    if (not engine->isReady(&status))
-        throw Exception("[engine error] engine is not ready:n" + status, FL_AT);
-
-    InputVariable* obstacle = engine->getInputVariable("obstacle");
-    InputVariable* goal = engine->getInputVariable("goal");
-    OutputVariable* steer = engine->getOutputVariable("mSteer");
-
-
-
-
-
-
-
-  //////////////////
   while (true) {
 
-      //// start of fuzzy controller
-      flag=true;
-      while(flag);
-
-      float closest=10;
-      int index=-1;
-      for(int i=0; i<test.size() ;i++)// finds closest range from lidar scanner
-          {
-             if(closest>std::get<1>(test[i]))
-                 {
-                 closest=std::get<1>(test[i]);
-                 index=i;
-                 }
-          }
-
-
-
-
-      obstacle->setValue(std::get<0>(test[index]));
-      std::cout<< "angle: "<< std::get<0>(test[index]) <<std::endl;
-      test.clear();
-
-      engine->process();
-      dir = steer->getValue();
-
-      std::cout << "output dir " << dir << std::endl;
-///// end of fuzzy controller
-
+      controller.move(speed,dir);
 
       gazebo::common::Time::MSleep(10);
 //
