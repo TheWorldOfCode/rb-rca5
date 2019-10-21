@@ -187,6 +187,10 @@ Vision camera;//////////////////////////
     gazebo::transport::SubscriberPtr lidarSubscriber =
             node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", lidarCallback);
 
+    // creates subscriber to FuzzyControl
+    gazebo::transport::SubscriberPtr lidar_fuzzy_Subscriber =
+            node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", &FuzzyControl::lidarCallback, &controller);
+
     // creates subscriber to camera, with no magic
   gazebo::transport::SubscriberPtr cameraSubscriber =
       node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackRaw, &camera);
@@ -195,9 +199,7 @@ Vision camera;//////////////////////////
     gazebo::transport::SubscriberPtr cameraSubscriberHough =
             node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackHough, &camera);
 
-    // creates subscriber to FuzzyControl
-  gazebo::transport::SubscriberPtr lidar_fuzzy_Subscriber =
-          node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", &FuzzyControl::lidarCallback, &controller);
+
 
   // Publish to the robot vel_cmd topic
   gazebo::transport::PublisherPtr movementPublisher =
