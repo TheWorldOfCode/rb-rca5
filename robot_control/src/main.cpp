@@ -219,7 +219,7 @@ Vision camera;//////////////////////////
   const int key_right = 83;
   const int key_esc = 27;
 
-  float speed = 0.25;//////////////////////
+  float speed = 0.0;//////////////////////
   float dir = 0.0;
 
   // Loop

@@ -1,5 +1,5 @@
-#File: ObstacleAvoidance.fll
-Engine: ObstacleAvoidance
+#File: ObstacleAvoidanceWorking.fll
+Engine: ObstacleAvoidanceWorking
 InputVariable: obsDir
   enabled: true
   range: -3.142 3.142
@@ -60,37 +60,27 @@ RuleBlock: mamdani
   rule: if obsDir is left and obsDist is close and goal is left  then steer is hardRight and speed is slow
   rule: if obsDir is front and obsDist is close and goal is left then steer is hardLeft and speed is stop
   rule: if obsDir is right and obsDist is close and goal is left then steer is hardLeft and speed is slow
-
   rule: if obsDir is left and obsDist is medium and goal is left then steer is right and speed is medium
   rule: if obsDir is front and obsDist is medium and goal is left then steer is left and speed is slow
   rule: if obsDir is right and obsDist is medium and goal is left  then steer is left and speed is medium
-
   rule: if obsDir is left and obsDist is far and goal is left then steer is left and speed is fast
   rule: if obsDir is front and obsDist is far and goal is left then steer is left and speed is medium
   rule: if obsDir is right and obsDist is far and goal is left then steer is left and speed is fast
-
-
   rule: if obsDir is left and obsDist is close and goal is front then steer is hardRight and speed is slow
   rule: if obsDir is front and obsDist is close and goal is front then steer is hardRight and speed is stop
   rule: if obsDir is right and obsDist is close and goal is front then steer is hardLeft and speed is slow
-
   rule: if obsDir is left and obsDist is medium and goal is front then steer is right and speed is medium
   rule: if obsDir is front and obsDist is medium and goal is front then steer is hardRight and speed is slow
   rule: if obsDir is right and obsDist is medium and goal is front then steer is left and speed is medium
-
   rule: if obsDir is left and obsDist is far and goal is front then steer is forward and speed is fast
   rule: if obsDir is front and obsDist is far and goal is front then steer is forward and speed is medium
   rule: if obsDir is right and obsDist is far and goal is front then steer is forward and speed is fast
-
-
   rule: if obsDir is left and obsDist is close and goal is right then steer is hardRight and speed is slow
   rule: if obsDir is front and obsDist is close and goal is right then steer is hardRight and speed is stop
   rule: if obsDir is right and obsDist is close and goal is right then steer is hardLeft and speed is slow
-
   rule: if obsDir is left and obsDist is medium and goal is right then steer is right and speed is medium
   rule: if obsDir is front and obsDist is medium and goal is right then steer is hardRight and speed is slow
   rule: if obsDir is right and obsDist is medium and goal is right then steer is left and speed is medium
-
   rule: if obsDir is left and obsDist is far and goal is right then steer is right and speed is fast
   rule: if obsDir is front and obsDist is far and goal is right then steer is right and speed is medium
   rule: if obsDir is right and obsDist is far and goal is right then steer is right and speed is fast

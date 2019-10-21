@@ -23,10 +23,12 @@ FuzzyControl::FuzzyControl() {
     if (not engine->isReady(&status))
         throw Exception("[engine error] engine is not ready:n" + status, FL_AT);
 
-    obstacle = engine->getInputVariable("obstacle");
+    obsDir = engine->getInputVariable("obsDir");
+    obsDist = engine->getInputVariable("obsDist");
     goal = engine->getInputVariable("goal");
 
-    steer = engine->getOutputVariable("mSteer");
+    steer = engine->getOutputVariable("steer");
+    speed = engine->getOutputVariable("speed");
 }
 
 void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
@@ -59,7 +61,7 @@ void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
 
 }
 
-void FuzzyControl::move(float &speed, float &dir) {
+void FuzzyControl::move(float &speed2, float &dir) {
 
     flag=true;
     while(flag);
@@ -76,7 +78,7 @@ void FuzzyControl::move(float &speed, float &dir) {
             }
         }
 
-    obstacle->setValue(std::get<0>(lidar_data[index]));
+    obsDir->setValue(std::get<0>(lidar_data[index]));
 
 #if FUZZY_DEBUG == 1
     std::cout<< "angle: "<< std::get<0>(lidar_data[index]) <<std::endl;
@@ -86,6 +88,7 @@ void FuzzyControl::move(float &speed, float &dir) {
 
     engine->process();
     dir = steer->getValue();
+    speed2 = speed->getValue();
 
 #if FUZZY_DEBUG == 1
     std::cout << "output dir " << dir << std::endl;
