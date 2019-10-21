@@ -30,9 +30,9 @@ FuzzyControl::FuzzyControl() {
 }
 
 void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
-    //  std::cout << ">> " << msg->DebugString() << std::endl;
+     //std::cout << ">> " << msg->DebugString() << std::endl;
     float angle_min = float(msg->scan().angle_min());
-    //  double angle_max = msg->scan().angle_max();
+      double angle_max = msg->scan().angle_max();
     float angle_increment = float(msg->scan().angle_step());
 
     float range_min = float(msg->scan().range_min());
