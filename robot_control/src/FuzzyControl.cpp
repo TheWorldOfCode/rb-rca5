@@ -17,7 +17,7 @@ FuzzyControl::FuzzyControl() {
     flag = false;
 
     engine = FllImporter().fromFile(
-            "../fuzzy_control/ObstacleAvoidance.fll");// bemærk et niveau op, kunne også have flyttet .fll
+            "../fuzzy_control/ObstacleAvoidanceWorking.fll");// bemærk et niveau op, kunne også have flyttet .fll
 
     std::string status;
     if (not engine->isReady(&status))
