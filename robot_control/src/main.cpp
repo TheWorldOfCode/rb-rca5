@@ -21,40 +21,40 @@ void statCallback(ConstWorldStatisticsPtr &_msg) {
   //  std::cout << std::flush;
 }
 
-//void poseCallback(ConstPosesStampedPtr &_msg) {
-//  // Dump the message contents to stdout.
-//  //  std::cout << _msg->DebugString();
-//
-//  for (int i = 0; i < _msg->pose_size(); i++) {
-//    if (_msg->pose(i).name() == "pioneer2dx") {
-//
-//      std::cout << std::setprecision(2) << std::fixed << std::setw(6)
-//                << _msg->pose(i).position().x() << std::setw(6)
-//                << _msg->pose(i).position().y() << std::setw(6)
-//                << _msg->pose(i).position().z() << std::setw(6)
-//                << _msg->pose(i).orientation().w() << std::setw(6)
-//                << _msg->pose(i).orientation().x() << std::setw(6)
-//                << _msg->pose(i).orientation().y() << std::setw(6)
-//                << _msg->pose(i).orientation().z() << std::endl;
-//    }
-//  }
-//}
+void poseCallback(ConstPosesStampedPtr &_msg) {
+  // Dump the message contents to stdout.
+  //  std::cout << _msg->DebugString();
 
-void poseCallbackNew(ConstPosesStampedPtr &_msg) {
-    // Dump the message contents to stdout.
-    //  std::cout << _msg->DebugString();
+  for (int i = 0; i < _msg->pose_size(); i++) {
+    if (_msg->pose(i).name() == "pioneer2dx") {
 
-//
-//    for (int i = 0; i < _msg->pose_size(); i++) {
-//        if (_msg->pose(i).name() == "pioneer2dx") {
-//
-//            std::cout << std::setprecision(2) << std::fixed << std::setw(6)
-//                      << _msg->pose(i).position().x() << std::setw(6)
-//                      << _msg->pose(i).position().y() << std::setw(6)
-//                      << _msg->pose(i).orientation().z() << std::endl; // seen from x direction a left rotation is positive, and a right is negative TROR JEG
-//            }
-//        }
+      std::cout << std::setprecision(2) << std::fixed << std::setw(6)
+                << _msg->pose(i).position().x() << std::setw(6)
+                << _msg->pose(i).position().y() << std::setw(6)
+                << _msg->pose(i).position().z() << std::setw(6)
+                << _msg->pose(i).orientation().w() << std::setw(6)
+                << _msg->pose(i).orientation().x() << std::setw(6)
+                << _msg->pose(i).orientation().y() << std::setw(6)
+                << _msg->pose(i).orientation().z() << std::endl;
+    }
+  }
 }
+//
+//void poseCallbackNew(ConstPosesStampedPtr &_msg) {
+//    // Dump the message contents to stdout.
+//    //  std::cout << _msg->DebugString();
+//
+////
+////    for (int i = 0; i < _msg->pose_size(); i++) {
+////        if (_msg->pose(i).name() == "pioneer2dx") {
+////
+////            std::cout << std::setprecision(2) << std::fixed << std::setw(6)
+////                      << _msg->pose(i).position().x() << std::setw(6)
+////                      << _msg->pose(i).position().y() << std::setw(6)
+////                      << _msg->pose(i).orientation().z() << std::endl; // seen from x direction a left rotation is positive, and a right is negative TROR JEG
+////            }
+////        }
+//}
 
 //void cameraCallback(ConstImageStampedPtr &msg) {
 //
@@ -122,56 +122,7 @@ void poseCallbackNew(ConstPosesStampedPtr &_msg) {
 //    mutex.unlock();
 //}
 
-void lidarCallback(ConstLaserScanStampedPtr &msg) {
-
-    //  std::cout << ">> " << msg->DebugString() << std::endl;
-    float angle_min = float(msg->scan().angle_min());
-    //  double angle_max = msg->scan().angle_max();
-    float angle_increment = float(msg->scan().angle_step());
-
-    float range_min = float(msg->scan().range_min());
-    float range_max = float(msg->scan().range_max());
-
-    int sec = msg->time().sec();
-    int nsec = msg->time().nsec();
-
-    int nranges = msg->scan().ranges_size();
-    int nintensities = msg->scan().intensities_size();
-
-    assert(nranges == nintensities);
-
-    int width = 400;
-    int height = 400;
-    float px_per_m = 200 / range_max;
-
-    cv::Mat im(height, width, CV_8UC3);
-    im.setTo(0);
-    for (int i = 0; i < nranges; i++) {
-        float angle = angle_min + i * angle_increment;
-        float range = std::min(float(msg->scan().ranges(i)), range_max);
-        //////
-
-        //////
-        //    double intensity = msg->scan().intensities(i);
-        cv::Point2f startpt(200.5f + range_min * px_per_m * std::cos(angle),
-                            200.5f - range_min * px_per_m * std::sin(angle));
-        cv::Point2f endpt(200.5f + range * px_per_m * std::cos(angle),
-                          200.5f - range * px_per_m * std::sin(angle));
-        cv::line(im, startpt * 16, endpt * 16, cv::Scalar(255, 255, 255, 255), 1,
-                 cv::LINE_AA, 4);
-
-        //    std::cout << angle << " " << range << " " << intensity << std::endl;
-        }
-
-    cv::circle(im, cv::Point(200, 200), 2, cv::Scalar(0, 0, 255));
-    cv::putText(im, std::to_string(sec) + ":" + std::to_string(nsec),
-                cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1.0,
-                cv::Scalar(255, 0, 0));
-
-    mutex.lock();
-    cv::imshow("lidar", im);
-    mutex.unlock();
-}
+//
 
 
 int main(int _argc, char **_argv) {
@@ -190,9 +141,9 @@ Vision camera;//////////////////////////
   // Listen to Gazebo topics
   gazebo::transport::SubscriberPtr statSubscriber =
       node->Subscribe("~/world_stats", statCallback);
-    // new subscriper for pose
-  gazebo::transport::SubscriberPtr poseSubscriber =
-      node->Subscribe("~/pose/info", poseCallbackNew);
+    // subscriper for pose
+//  gazebo::transport::SubscriberPtr poseSubscriber =
+//      node->Subscribe("~/pose/info", poseCallback);
 
 //  gazebo::transport::SubscriberPtr cameraSubscriber =
 //      node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallback);
@@ -200,12 +151,16 @@ Vision camera;//////////////////////////
 //    gazebo::transport::SubscriberPtr cameraSubscriberNew =
 //            node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallbackNew);
     // creates lidar subscriber
-    gazebo::transport::SubscriberPtr lidarSubscriber =
-            node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", lidarCallback);
+//    gazebo::transport::SubscriberPtr lidarSubscriber =
+//            node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", lidarCallback);
 
     // creates subscriber to FuzzyControl
     gazebo::transport::SubscriberPtr lidar_fuzzy_Subscriber =
             node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", &FuzzyControl::lidarCallback, &controller);
+
+    // CHEAT subscriber to current pose
+    gazebo::transport::SubscriberPtr poseSubscriber =
+      node->Subscribe("~/pose/info", &FuzzyControl::poseCallbackNew, & controller);
 
     // creates subscriber to camera, with no magic
   gazebo::transport::SubscriberPtr cameraSubscriber =
@@ -235,8 +190,9 @@ Vision camera;//////////////////////////
   const int key_right = 83;
   const int key_esc = 27;
 
-  float speed = 0.0;//////////////////////
-  float dir = 0.0;
+  float speed= 0.2;//////////////////////
+  float dir= 0.0;
+  controller.setGoal( -1.5, 2 );
 
   // Loop
   while (true) {
@@ -249,9 +205,9 @@ Vision camera;//////////////////////////
     int key = cv::waitKey(1);
     mutex.unlock();
 //
-//    if (key == key_esc)
-//      break;
-//
+    if (key == key_esc)
+      break;
+
 //    if ((key == key_up) && (speed <= 1.2f))
 //      speed += 0.05;
 //    else if ((key == key_down) && (speed >= -1.2f))
@@ -261,9 +217,9 @@ Vision camera;//////////////////////////
 //    else if ((key == key_left) && (dir >= -0.4f))
 //      dir -= 0.05;
 //    else {
-//      // slow down
-//      //      speed *= 0.1;
-//      //      dir *= 0.1;
+//  //     slow down
+//            speed *= 0.1;
+//            dir *= 0.1;
 //    }
 
     // Generate a pose
