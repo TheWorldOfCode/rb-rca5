@@ -23,6 +23,6 @@ include_directories(includes)
 file(GLOB SOURCES src/*.cpp)
 
 
-add_executable(robot_control ${SOURCES})
+add_executable(robot_control ${SOURCES} src/FuzzyControl.cpp includes/FuzzyControl.h src/Vision.cpp includes/Vision.h)
 
 target_link_libraries(robot_control ${OpenCV_LIBS} ${GAZEBO_PROTO_LIBRARIES} ${GAZEBO_LIBRARIES} ${FuzzyLib})

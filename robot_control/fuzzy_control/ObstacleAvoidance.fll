@@ -1,6 +1,6 @@
 #File: ObstacleAvoidance.fll
 Engine: ObstacleAvoidance
-InputVariable: obstacle
+InputVariable: obsDir
   enabled: true
   range: -1.000 1.000
   lock-range: false
@@ -38,15 +38,15 @@ RuleBlock: mamdani
   disjunction: none
   implication: AlgebraicProduct
   activation: General
-  rule: if obstacle is left then mSteer is right
-  rule: if obstacle is hard_left then mSteer is hard_right
-  rule: if obstacle is right then mSteer is left
-  rule: if obstacle is hard_right then mSteer is hard_left
-  rule: if obstacle is front then mSteer is hard_right
+  rule: if obsDir is left then mSteer is right
+  rule: if obsDir is hard_left then mSteer is hard_right
+  rule: if obsDir is right then mSteer is left
+  rule: if obsDir is hard_right then mSteer is hard_left
+  rule: if obsDir is front then mSteer is hard_right
 
-  #rule: if obstacle is left and goal is left then mSteer is right
-  #rule: if obstacle is left and goal is right then mSteer is right
-  #rule: if obstacle is right and goal is left then mSteer is left
-  #rule: if obstacle is right and goal is right then mSteer is left
+  #rule: if obsDir is left and goal is left then mSteer is right
+  #rule: if obsDir is left and goal is right then mSteer is right
+  #rule: if obsDir is right and goal is left then mSteer is left
+  #rule: if obsDir is right and goal is right then mSteer is left
 
 

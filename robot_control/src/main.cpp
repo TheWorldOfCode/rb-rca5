@@ -21,23 +21,39 @@ void statCallback(ConstWorldStatisticsPtr &_msg) {
   //  std::cout << std::flush;
 }
 
-void poseCallback(ConstPosesStampedPtr &_msg) {
-  // Dump the message contents to stdout.
-  //  std::cout << _msg->DebugString();
+//void poseCallback(ConstPosesStampedPtr &_msg) {
+//  // Dump the message contents to stdout.
+//  //  std::cout << _msg->DebugString();
+//
+//  for (int i = 0; i < _msg->pose_size(); i++) {
+//    if (_msg->pose(i).name() == "pioneer2dx") {
+//
+//      std::cout << std::setprecision(2) << std::fixed << std::setw(6)
+//                << _msg->pose(i).position().x() << std::setw(6)
+//                << _msg->pose(i).position().y() << std::setw(6)
+//                << _msg->pose(i).position().z() << std::setw(6)
+//                << _msg->pose(i).orientation().w() << std::setw(6)
+//                << _msg->pose(i).orientation().x() << std::setw(6)
+//                << _msg->pose(i).orientation().y() << std::setw(6)
+//                << _msg->pose(i).orientation().z() << std::endl;
+//    }
+//  }
+//}
 
-  for (int i = 0; i < _msg->pose_size(); i++) {
-    if (_msg->pose(i).name() == "pioneer2dx") {
+void poseCallbackNew(ConstPosesStampedPtr &_msg) {
+    // Dump the message contents to stdout.
+    //  std::cout << _msg->DebugString();
 
-      std::cout << std::setprecision(2) << std::fixed << std::setw(6)
-                << _msg->pose(i).position().x() << std::setw(6)
-                << _msg->pose(i).position().y() << std::setw(6)
-                << _msg->pose(i).position().z() << std::setw(6)
-                << _msg->pose(i).orientation().w() << std::setw(6)
-                << _msg->pose(i).orientation().x() << std::setw(6)
-                << _msg->pose(i).orientation().y() << std::setw(6)
-                << _msg->pose(i).orientation().z() << std::endl;
-    }
-  }
+//
+//    for (int i = 0; i < _msg->pose_size(); i++) {
+//        if (_msg->pose(i).name() == "pioneer2dx") {
+//
+//            std::cout << std::setprecision(2) << std::fixed << std::setw(6)
+//                      << _msg->pose(i).position().x() << std::setw(6)
+//                      << _msg->pose(i).position().y() << std::setw(6)
+//                      << _msg->pose(i).orientation().z() << std::endl; // seen from x direction a left rotation is positive, and a right is negative TROR JEG
+//            }
+//        }
 }
 
 //void cameraCallback(ConstImageStampedPtr &msg) {
@@ -174,9 +190,9 @@ Vision camera;//////////////////////////
   // Listen to Gazebo topics
   gazebo::transport::SubscriberPtr statSubscriber =
       node->Subscribe("~/world_stats", statCallback);
-
-//  gazebo::transport::SubscriberPtr poseSubscriber =
-//      node->Subscribe("~/pose/info", poseCallback);
+    // new subscriper for pose
+  gazebo::transport::SubscriberPtr poseSubscriber =
+      node->Subscribe("~/pose/info", poseCallbackNew);
 
 //  gazebo::transport::SubscriberPtr cameraSubscriber =
 //      node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallback);

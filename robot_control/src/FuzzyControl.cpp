@@ -17,6 +17,7 @@ FuzzyControl::FuzzyControl() {
     flag = false;
 
     engine = FllImporter().fromFile(
+//            "../fuzzy_control/ObstacleAvoidanceWorking.fll");// bemærk et niveau op, kunne også have flyttet .fll
             "../fuzzy_control/ObstacleAvoidanceWorking.fll");// bemærk et niveau op, kunne også have flyttet .fll
 
     std::string status;
@@ -80,6 +81,12 @@ void FuzzyControl::move(float &speed2, float &dir) {
 
     obsDir->setValue(std::get<0>(lidar_data[index]));
 
+    obsDist->setValue(std::get<1>(lidar_data[index]));
+
+
+
+
+
 #if FUZZY_DEBUG == 1
     std::cout<< "angle: "<< std::get<0>(lidar_data[index]) <<std::endl;
 #endif
@@ -96,8 +103,39 @@ void FuzzyControl::move(float &speed2, float &dir) {
 
 }
 
+void FuzzyControl::setGoal(float x, float y)
+{
+  goalCoordinates = std::tie(x,y);
+}
+
+#if ENABLE_GLOBAL_POS == 1
+void FuzzyControl::getCurrentPosition(ConstPosesStampedPtr & msg)
+{
+    for (int i = 0; i < msg->pose_size(); i++) {
+        if (msg->pose(i).name() == "pioneer2dx") {
+             float x = msg->pose(i).position().x();
+             float y = msg->pose(i).position().y();
+             float rz = msg->pose(i).orientation().z(); // seen from x direction a left rotation is positive, and a right is negative TROR JEG
+
+            std::cout << std::setprecision(2) << std::fixed << std::setw(6)
+                      << x << std::setw(6)
+                      << y << std::setw(6)
+                      << rz << std::endl; // seen from x direction a left rotation is positive, and a right is negative TROR JEG
+
+            currentCoordinates = std::tie(x, y, rz);
+            }
+
+
+        }
+
+}
+#endif
+
 FuzzyControl::~FuzzyControl() {
 
     lidar_data.clear();
 
 }
+
+
+

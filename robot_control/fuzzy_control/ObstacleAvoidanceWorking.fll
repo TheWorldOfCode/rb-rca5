@@ -53,8 +53,8 @@ OutputVariable: speed
 
 RuleBlock: mamdani
   enabled: true
-  conjunction: none
-  disjunction: none
+  conjunction: Minimum
+  disjunction: Maximum
   implication: AlgebraicProduct
   activation: General
   rule: if obsDir is left and obsDist is close and goal is left  then steer is hardRight and speed is slow

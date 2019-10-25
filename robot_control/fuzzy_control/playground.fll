@@ -1,0 +1,39 @@
+#File: ObstacleAvoidanceWorking.fll
+Engine: ObstacleAvoidanceWorking
+InputVariable: obsDir
+  enabled: true
+  range: -3.142 3.142
+  lock-range: false
+  term: left Triangle -3.142 -1.571 0.000
+  term: front Triangle -1.571 0.000 1.571
+  term: right Triangle 0.000 1.571 3.142
+
+InputVariable: goal
+  enabled: true
+  range: -3.142 3.142
+  lock-range: false
+  term: left Triangle -3.142 -1.571 0.000
+  term: front Triangle -1.571 0.000 1.571
+  term: right Triangle 0.000 1.571 3.142
+
+OutputVariable: mSteer
+  enabled: true
+  range: -1.000 1.000
+  lock-range: false
+  aggregation: Maximum
+  defuzzifier: Centroid 100
+  default: nan
+  lock-previous: false
+  term: left Triangle -1.000 -0.500 0.000
+  term: right Triangle 0.000 0.500 1.000
+
+RuleBlock: mamdani
+  enabled: true
+  conjunction: Minimum
+  disjunction: Maximum
+  implication: AlgebraicProduct
+  activation: General
+  rule: if obsDir is left and goal is left then mSteer is right
+  rule: if obsDir is left and goal is right then mSteer is right
+  rule: if obsDir is right and goal is left then mSteer is left
+  rule: if obsDir is right and goal is right then mSteer is left

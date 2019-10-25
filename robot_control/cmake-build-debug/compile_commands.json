@@ -1,0 +1,17 @@
+[
+{
+  "directory": "/home/lars/git_repos/rb-rca5/robot_control/cmake-build-debug",
+  "command": "/usr/bin/c++  -DLIBBULLET_VERSION=2.87 -DLIBBULLET_VERSION_GT_282 -I/usr/include/gazebo-10/gazebo/msgs -I/usr/include/gazebo-10 -I/usr/include/bullet -I/usr/include/simbody -I/usr/include/sdformat-6.2 -I/usr/include/OGRE -I/usr/include/OGRE/Terrain -I/usr/include/OGRE/Paging -I/home/lars/git_repos/rb-rca5/robot_control/includes -isystem /usr/include/opencv -isystem /usr/include/ignition/math4 -isystem /usr/include/ignition/transport4 -isystem /usr/include/ignition/msgs1 -isystem /usr/include/ignition/common1 -isystem /usr/include/ignition/fuel_tools1 -isystem /usr/include/uuid  -g   -I/usr/include/uuid -I/usr/include/x86_64-linux-gnu -std=gnu++14 -o CMakeFiles/robot_control.dir/src/FuzzyControl.cpp.o -c /home/lars/git_repos/rb-rca5/robot_control/src/FuzzyControl.cpp",
+  "file": "/home/lars/git_repos/rb-rca5/robot_control/src/FuzzyControl.cpp"
+},
+{
+  "directory": "/home/lars/git_repos/rb-rca5/robot_control/cmake-build-debug",
+  "command": "/usr/bin/c++  -DLIBBULLET_VERSION=2.87 -DLIBBULLET_VERSION_GT_282 -I/usr/include/gazebo-10/gazebo/msgs -I/usr/include/gazebo-10 -I/usr/include/bullet -I/usr/include/simbody -I/usr/include/sdformat-6.2 -I/usr/include/OGRE -I/usr/include/OGRE/Terrain -I/usr/include/OGRE/Paging -I/home/lars/git_repos/rb-rca5/robot_control/includes -isystem /usr/include/opencv -isystem /usr/include/ignition/math4 -isystem /usr/include/ignition/transport4 -isystem /usr/include/ignition/msgs1 -isystem /usr/include/ignition/common1 -isystem /usr/include/ignition/fuel_tools1 -isystem /usr/include/uuid  -g   -I/usr/include/uuid -I/usr/include/x86_64-linux-gnu -std=gnu++14 -o CMakeFiles/robot_control.dir/src/Vision.cpp.o -c /home/lars/git_repos/rb-rca5/robot_control/src/Vision.cpp",
+  "file": "/home/lars/git_repos/rb-rca5/robot_control/src/Vision.cpp"
+},
+{
+  "directory": "/home/lars/git_repos/rb-rca5/robot_control/cmake-build-debug",
+  "command": "/usr/bin/c++  -DLIBBULLET_VERSION=2.87 -DLIBBULLET_VERSION_GT_282 -I/usr/include/gazebo-10/gazebo/msgs -I/usr/include/gazebo-10 -I/usr/include/bullet -I/usr/include/simbody -I/usr/include/sdformat-6.2 -I/usr/include/OGRE -I/usr/include/OGRE/Terrain -I/usr/include/OGRE/Paging -I/home/lars/git_repos/rb-rca5/robot_control/includes -isystem /usr/include/opencv -isystem /usr/include/ignition/math4 -isystem /usr/include/ignition/transport4 -isystem /usr/include/ignition/msgs1 -isystem /usr/include/ignition/common1 -isystem /usr/include/ignition/fuel_tools1 -isystem /usr/include/uuid  -g   -I/usr/include/uuid -I/usr/include/x86_64-linux-gnu -std=gnu++14 -o CMakeFiles/robot_control.dir/src/main.cpp.o -c /home/lars/git_repos/rb-rca5/robot_control/src/main.cpp",
+  "file": "/home/lars/git_repos/rb-rca5/robot_control/src/main.cpp"
+}
+]
