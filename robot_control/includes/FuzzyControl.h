@@ -18,8 +18,10 @@ public:
     void setGoal(const float x, const float y);
 
 #if ENABLE_GLOBAL_POS == 1
-    void getCurrentPosition(ConstPosesStampedPtr &_msg); // temp cheat method
+    void poseCallbackNew(ConstPosesStampedPtr &_msg); // temp cheat method
 #endif
+
+    float calculateGoalDir();
 
     ~FuzzyControl();
 private:

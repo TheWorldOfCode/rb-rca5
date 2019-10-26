@@ -5,6 +5,8 @@
 
 
 #include <string>
+#include <cmath>        // std::atan2
+
 #if FUZZY_DEBUG == 1
 #include <iostram>
 #endif
@@ -18,7 +20,7 @@ FuzzyControl::FuzzyControl() {
 
     engine = FllImporter().fromFile(
 //            "../fuzzy_control/ObstacleAvoidanceWorking.fll");// bemærk et niveau op, kunne også have flyttet .fll
-            "../fuzzy_control/ObstacleAvoidanceWorking.fll");// bemærk et niveau op, kunne også have flyttet .fll
+            "../fuzzy_control/ObstacleAvoidance.fll");// bemærk et niveau op, kunne også have flyttet .fll
 
     std::string status;
     if (not engine->isReady(&status))
@@ -83,6 +85,14 @@ void FuzzyControl::move(float &speed2, float &dir) {
 
     obsDist->setValue(std::get<1>(lidar_data[index]));
 
+    float goalDir=calculateGoalDir();
+
+    goal -> setValue(goalDir);////
+
+    std::cout << " obsDist: "<< std::get<1>(lidar_data[index]) << std::endl;
+    std::cout << " obsDir: "<< std::get<0>(lidar_data[index]) << std::endl;
+    std::cout << " goalDir: "<< goalDir << std::endl;
+
 
 
 
@@ -109,7 +119,7 @@ void FuzzyControl::setGoal(float x, float y)
 }
 
 #if ENABLE_GLOBAL_POS == 1
-void FuzzyControl::getCurrentPosition(ConstPosesStampedPtr & msg)
+void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
 {
     for (int i = 0; i < msg->pose_size(); i++) {
         if (msg->pose(i).name() == "pioneer2dx") {
@@ -118,18 +128,37 @@ void FuzzyControl::getCurrentPosition(ConstPosesStampedPtr & msg)
              float rz = msg->pose(i).orientation().z(); // seen from x direction a left rotation is positive, and a right is negative TROR JEG
 
             std::cout << std::setprecision(2) << std::fixed << std::setw(6)
-                      << x << std::setw(6)
-                      << y << std::setw(6)
-                      << rz << std::endl; // seen from x direction a left rotation is positive, and a right is negative TROR JEG
+                      << "current x: " << x << std::setw(6)
+                      << " current y: " << y << std::setw(6)
+                      << " orientation: " << rz << std::setw(6)<< std::endl; // seen from x direction a left rotation is positive, and a right is negative
 
             currentCoordinates = std::tie(x, y, rz);
             }
-
-
         }
-
 }
 #endif
+
+float FuzzyControl::calculateGoalDir()
+{
+    float deltaX=std::get<0>(goalCoordinates) - std::get<0>(currentCoordinates);
+
+//    float testX= std::get<0>(goalCoordinates) - std::get<0>(currentCoordinates);
+//
+//    if(testX !=0)
+//        deltaX=testX;
+//    else
+//        testX=testX+0.1;
+
+    std::cout << " deltaX: "<< deltaX<< std::endl;
+
+    float deltaY = std::get<1>(goalCoordinates) - std::get<1>(currentCoordinates);
+
+
+    float goalDir = (std::atan2(deltaY, deltaX)) - std::get<2>(currentCoordinates);
+
+
+    return goalDir;
+}
 
 FuzzyControl::~FuzzyControl() {
 
