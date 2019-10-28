@@ -121,6 +121,7 @@ void FuzzyControl::setGoal(float x, float y)
 #if ENABLE_GLOBAL_POS == 1
 void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
 {
+    mutexFuzzy.lock();
     for (int i = 0; i < msg->pose_size(); i++) {
         if (msg->pose(i).name() == "pioneer2dx") {
              float x = msg->pose(i).position().x();
@@ -135,19 +136,19 @@ void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
             currentCoordinates = std::tie(x, y, rz);
             }
         }
+    mutexFuzzy.unlock();
+
 }
 #endif
 
 float FuzzyControl::calculateGoalDir()
 {
     /// method using atan2:
-
+   // mutexFuzzy.lock();
     float robAngle = std::get<2>(currentCoordinates);
     float robX =std::get<0>(currentCoordinates);
     float robY =std::get<1>(currentCoordinates);
-
-
-
+   // mutexFuzzy.unlock();
 
     cv::Mat goalTrans = cv::Mat(3,3,CV_32FC1);
 
@@ -176,15 +177,6 @@ float FuzzyControl::calculateGoalDir()
         std::cout << " goal Local X: "<< goalLocal.at<float> (0,0)<< " goalLocal Y: "<< goalLocal.at<float> (1,0) << std::endl;
 
         std::cout << " goalDir: "<< goalDir << std::endl;
-
-
-
-
-
-
-
-
-
 
 
 
