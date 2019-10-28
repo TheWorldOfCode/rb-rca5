@@ -195,6 +195,10 @@ int main(int _argc, char **_argv) {
 	gazebo::transport::SubscriberPtr lidar_fuzzy_Subscriber =
 		node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", &FuzzyControl::lidarCallback, &controller);
 
+	 // CHEAT subscriber to current pose
+    	gazebo::transport::SubscriberPtr poseSubscriber =
+      		node->Subscribe("~/pose/info", &FuzzyControl::poseCallbackNew, & controller);
+	
 	// creates subscriber to camera, with no magic
 	gazebo::transport::SubscriberPtr cameraSubscriber =
 		node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackRaw, &camera);
@@ -255,8 +259,9 @@ int main(int _argc, char **_argv) {
 	    const int key_right = 83;
 	    const int key_esc = 27;
 
-	    float speed = 0.0;//////////////////////
+	    float speed = 0.2;//////////////////////
 	    float dir = 0.0;
+	    controller.setGoal(-1.5,2);
 
 	// Loop
 	while (true) {
@@ -269,9 +274,9 @@ int main(int _argc, char **_argv) {
 	int key = cv::waitKey(1);
 	mutex.unlock();
 	//
-	//    if (key == key_esc)
-	//      break;
-	//
+	   if (key == key_esc)
+	      break;
+	
 	//    if ((key == key_up) && (speed <= 1.2f))
 	//      speed += 0.05;
 	//    else if ((key == key_down) && (speed >= -1.2f))
