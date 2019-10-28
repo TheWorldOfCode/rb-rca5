@@ -5,7 +5,7 @@
 
 #include "line.hpp" 
 
-#define DEBUG_LINE_DETECT 1
+#define DEBUG_LINE_DETECT 0
 #if DEBUG_LINE_DETECT == 1
 
 #include <gazebo/msgs/msgs.hh>
