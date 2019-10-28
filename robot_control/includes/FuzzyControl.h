@@ -6,6 +6,9 @@
 #include <tuple>
 #include <fl/Headers.h>
 #include <gazebo/msgs/msgs.hh>
+#include <math.h>
+#include <opencv2/opencv.hpp>
+#include <gazebo/gazebo_client.hh>
 
 #define ENABLE_GLOBAL_POS 1
 
