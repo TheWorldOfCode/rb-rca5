@@ -6,6 +6,9 @@
 #include <tuple>
 #include <fl/Headers.h>
 #include <gazebo/msgs/msgs.hh>
+#include <math.h>
+#include <opencv2/opencv.hpp>
+#include <gazebo/gazebo_client.hh>
 
 #define ENABLE_GLOBAL_POS 1
 
@@ -28,17 +31,14 @@ private:
     std::vector<std::tuple<float, float>> lidar_data;
     bool flag ;
     fl::Engine * engine;
-
     fl::InputVariable * obsDir;
     fl::InputVariable * obsDist;
     fl::InputVariable * goal;
-
     fl::OutputVariable * steer;
     fl::OutputVariable * speed;
-
     std::tuple<float, float, float> currentCoordinates;
-
     std::tuple< float, float> goalCoordinates;
+    boost::mutex  mutexFuzzy;
 
 };
 
