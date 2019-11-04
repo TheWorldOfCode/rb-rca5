@@ -20,7 +20,7 @@ FuzzyControl::FuzzyControl() {
 
     engine = FllImporter().fromFile(
 //            "../fuzzy_control/playground");// bemærk et niveau op, kunne også have flyttet .fll
-            "../fuzzy_control/playground.fll");// bemærk et niveau op, kunne også have flyttet .fll
+            "../fuzzy_control/sandBox.fll");// bemærk et niveau op, kunne også have flyttet .fll
 
     std::string status;
     if (not engine->isReady(&status))
@@ -54,7 +54,7 @@ void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
         float angle = angle_min + i * angle_increment;
         float range = std::min(float(msg->scan().ranges(i)), range_max);
 
-        if((range < 3) && (flag))
+        if((range < 10) && (flag))
             {
             lidar_data.push_back(std::tuple<float, float>(angle, range));
             }
@@ -158,11 +158,10 @@ void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
 float FuzzyControl::calculateGoalDir()
 {
     /// method using atan2:
-//    mutexFuzzy.lock();
+    mutexFuzzy.lock();
     float robAngle = std::get<2>(currentCoordinates);
     float robX =std::get<0>(currentCoordinates);
     float robY =std::get<1>(currentCoordinates);
-//    mutexFuzzy.unlock();
     float goalX = std::get<0>(goalCoordinates);
     float goalY = std::get<1>(goalCoordinates);
 
@@ -259,6 +258,7 @@ float FuzzyControl::calculateGoalDir()
 //        {
 //        goalDir = (acosf(deltaX / hypotenuse)) - std::get<2>(currentCoordinates)+(3.1416);
 //        }
+    mutexFuzzy.unlock();
 
     return goalDir;
 

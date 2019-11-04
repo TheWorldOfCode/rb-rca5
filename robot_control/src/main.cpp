@@ -259,9 +259,9 @@ int main(int _argc, char **_argv) {
 	    const int key_right = 83;
 	    const int key_esc = 27;
 
-	    float speed = 0.2;//////////////////////
-	    float dir = 0.0;
-	    controller.setGoal(-1.5,2);
+	    float speed = 0.2 ;//////////////////////
+	    float dir =0.0; ////////////////////////////////
+	    controller.setGoal(5,0);
 
 	// Loop
 	while (true) {
@@ -274,22 +274,22 @@ int main(int _argc, char **_argv) {
 	int key = cv::waitKey(1);
 	mutex.unlock();
 	//
-	   if (key == key_esc)
-	      break;
-	
-	//    if ((key == key_up) && (speed <= 1.2f))
-	//      speed += 0.05;
-	//    else if ((key == key_down) && (speed >= -1.2f))
-	//      speed -= 0.05;
-	//    else if ((key == key_right) && (dir <= 0.4f))
-	//      dir += 0.05;
-	//    else if ((key == key_left) && (dir >= -0.4f))
-	//      dir -= 0.05;
-	//    else {
-	//      // slow down
-	//      //      speed *= 0.1;
-	//      //      dir *= 0.1;
-	//    }
+//	   if (key == key_esc)
+//	      break;
+//
+//	    if ((key == key_up) && (speed <= 1.2f))
+//	      speed += 0.05;
+//	    else if ((key == key_down) && (speed >= -1.2f))
+//	      speed -= 0.05;
+//	    else if ((key == key_right) && (dir <= 0.4f))
+//	      dir += 0.05;
+//	    else if ((key == key_left) && (dir >= -0.4f))
+//	      dir -= 0.05;
+//	    else {
+//	       //slow down
+//	            speed *= 0.1;
+//	            dir *= 0.1;
+//	    }
 
 	// Generate a pose
 	ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
