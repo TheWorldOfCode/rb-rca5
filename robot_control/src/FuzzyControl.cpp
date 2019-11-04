@@ -15,29 +15,44 @@
 
 using namespace fl;
 
-FuzzyControl::FuzzyControl() {
+FuzzyControl::FuzzyControl()
+{
     flag = false;
 
-    engine = FllImporter().fromFile(
-//            "../fuzzy_control/playground");// bemærk et niveau op, kunne også have flyttet .fll
-            "../fuzzy_control/sandBox.fll");// bemærk et niveau op, kunne også have flyttet .fll
+    //################## Roaming Engine ##################################
+
+    roamEngine = FllImporter().fromFile(
+            "../fuzzy_control/ObstacleAvoidance.fll");// bemærk et niveau op, kunne også have flyttet .fll
 
     std::string status;
-    if (not engine->isReady(&status))
-        throw Exception("[engine error] engine is not ready:n" + status, FL_AT);
+    if (not roamEngine->isReady(&status))
+        throw Exception("[roamEngine error] roamEngine is not ready:n" + status, FL_AT);
 
-    obsDir = engine->getInputVariable("obsDir");
-    obsDist = engine->getInputVariable("obsDist");
-    goal = engine->getInputVariable("goal");
+    obsDir = roamEngine->getInputVariable("obsDir");
+    obsDist = roamEngine->getInputVariable("obsDist");
+    goal = roamEngine->getInputVariable("goal");
 
-    steer = engine->getOutputVariable("steer");
-    speed = engine->getOutputVariable("speed");
+    steer = roamEngine->getOutputVariable("steer");
+    speed = roamEngine->getOutputVariable("speed");
+
+    //################## Collecting Engine #############################
+    collectorEngine = FllImporter().fromFile(
+            "../fuzzy_control/CollectorEngine.fll");
+
+    std::string status2;
+    if (not collectorEngine->isReady(&status))
+        throw Exception("[collectorEngine error] collectorEngine is not ready:n" + status2, FL_AT);
+
+    marbleDir = collectorEngine->getInputVariable("marbleDir");
+
+    collectSteer = collectorEngine->getOutputVariable("steer");
+    collectSpeed = collectorEngine->getOutputVariable("speed");
 }
 
 void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
-     //std::cout << ">> " << msg->DebugString() << std::endl;
+    //std::cout << ">> " << msg->DebugString() << std::endl;
     float angle_min = float(msg->scan().angle_min());
-      double angle_max = msg->scan().angle_max();
+    double angle_max = msg->scan().angle_max();
     float angle_increment = float(msg->scan().angle_step());
 
     float range_min = float(msg->scan().range_min());
@@ -91,7 +106,7 @@ void FuzzyControl::move(float &speed2, float &dir) {
     goal -> setValue(goalDir);////
 
     //std::cout << " obsDist: "<< std::get<1>(lidar_data[index]) << std::endl;
-   // std::cout << " obsDir: "<< std::get<0>(lidar_data[index]) << std::endl;
+    // std::cout << " obsDir: "<< std::get<0>(lidar_data[index]) << std::endl;
 
 
 
@@ -103,9 +118,17 @@ void FuzzyControl::move(float &speed2, float &dir) {
 
     lidar_data.clear();
 
-    engine->process();
-    dir = steer->getValue();
-    speed2 = speed->getValue();
+    roamEngine->process();
+    float dirTmp = steer->getValue();
+    float speedTmp = speed->getValue();
+
+    std::cout << "dir:   " << dir << "\n" << "speed: " << speed2 << std::endl;
+    if (!isnan(dirTmp))
+        {
+        dir = dirTmp;
+        speed2 = speedTmp;
+        }
+
 
 #if FUZZY_DEBUG == 1
     std::cout << "output dir " << dir << std::endl;
@@ -113,9 +136,20 @@ void FuzzyControl::move(float &speed2, float &dir) {
 
 }
 
+void FuzzyControl::collect(float & speed, float & dir)
+{
+    flag = true;
+    while(flag);
+
+
+
+
+}
+
+
 void FuzzyControl::setGoal(float x, float y)
 {
-  goalCoordinates = std::tie(x,y);
+    goalCoordinates = std::tie(x,y);
 }
 
 #if ENABLE_GLOBAL_POS == 1
@@ -126,14 +160,14 @@ void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
     mutexFuzzy.lock();
     for (int i = 0; i < msg->pose_size(); i++) {
         if (msg->pose(i).name() == "pioneer2dx") {
-             x = msg->pose(i).position().x();
-             y = msg->pose(i).position().y();
+            x = msg->pose(i).position().x();
+            y = msg->pose(i).position().y();
 
-             // Quaternions
-             qw = msg->pose(i).orientation().w();
-             qx = msg->pose(i).orientation().x();
-             qy = msg->pose(i).orientation().y();
-             qz = msg->pose(i).orientation().z(); // seen from x direction a left rotation is positive, and a right is negative TROR JEG
+            // Quaternions
+            qw = msg->pose(i).orientation().w();
+            qx = msg->pose(i).orientation().x();
+            qy = msg->pose(i).orientation().y();
+            qz = msg->pose(i).orientation().z(); // seen from x direction a left rotation is positive, and a right is negative TROR JEG
 
             }
 
@@ -158,10 +192,11 @@ void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
 float FuzzyControl::calculateGoalDir()
 {
     /// method using atan2:
-    mutexFuzzy.lock();
+//    mutexFuzzy.lock();
     float robAngle = std::get<2>(currentCoordinates);
     float robX =std::get<0>(currentCoordinates);
     float robY =std::get<1>(currentCoordinates);
+//    mutexFuzzy.unlock();
     float goalX = std::get<0>(goalCoordinates);
     float goalY = std::get<1>(goalCoordinates);
 
@@ -177,6 +212,16 @@ float FuzzyControl::calculateGoalDir()
     cv::Mat goalLocal = rotMatrice * cv::Mat(distRobGoal);
 
     float goalDir = atan2((goalLocal.at<float> (1,0)),(goalLocal.at<float> (0,0)));
+
+
+//    std::cout << " goal global X: " << std::get<0>(goalCoordinates) << " goal global Y: " << std::get<1>(goalCoordinates)<<std::endl;
+//
+//    std::cout << " rob global X: " << robX << " rob global Y: " << robY<< " rob angle: "<< robAngle << std::endl;
+//
+//    std::cout << " goal Local X: "<< goalLocal.at<float> (0,0)<< " goalLocal Y: "<< goalLocal.at<float> (1,0) << std::endl;
+//
+//    std::cout << " goalDir: "<< goalDir << std::endl << std::endl;
+
 
 //    cv::Mat goalTrans = cv::Mat(3,3,CV_32FC1);
 //
@@ -206,13 +251,6 @@ float FuzzyControl::calculateGoalDir()
 //    float goalDir = atan2((goalLocal.at<float> (1,0)),(goalLocal.at<float> (0,0)));
 
 
-        std::cout << " goal global X: " << std::get<0>(goalCoordinates) << " goal global Y: " << std::get<1>(goalCoordinates)<<std::endl;
-
-        std::cout << " rob global X: " << robX << " rob global Y: " << robY<< " rob angle: "<< robAngle << std::endl;
-
-        std::cout << " goal Local X: "<< goalLocal.at<float> (0,0)<< " goalLocal Y: "<< goalLocal.at<float> (1,0) << std::endl;
-
-        std::cout << " goalDir: "<< goalDir << std::endl << std::endl;
 
 
 
@@ -258,7 +296,6 @@ float FuzzyControl::calculateGoalDir()
 //        {
 //        goalDir = (acosf(deltaX / hypotenuse)) - std::get<2>(currentCoordinates)+(3.1416);
 //        }
-    mutexFuzzy.unlock();
 
     return goalDir;
 

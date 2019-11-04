@@ -20,6 +20,7 @@ public:
     void move(float & speed, float & dir);
     void setGoal(const float x, const float y);
 
+    void collect(float & speed, float & dir);
 #if ENABLE_GLOBAL_POS == 1
     void poseCallbackNew(ConstPosesStampedPtr &_msg); // temp cheat method
 #endif
@@ -30,7 +31,7 @@ public:
 private:
     std::vector<std::tuple<float, float>> lidar_data;
     bool flag ;
-    fl::Engine * engine;
+    fl::Engine * roamEngine;
     fl::InputVariable * obsDir;
     fl::InputVariable * obsDist;
     fl::InputVariable * goal;
@@ -40,6 +41,10 @@ private:
     std::tuple< float, float> goalCoordinates;
     boost::mutex  mutexFuzzy;
 
-};
+    fl::Engine * collectorEngine;
+    fl::InputVariable * marbleDir;
+    fl::OutputVariable * collectSteer;
+    fl::OutputVariable * collectSpeed;
 
+};
 
