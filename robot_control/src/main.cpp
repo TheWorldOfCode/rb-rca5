@@ -159,6 +159,31 @@ void lidarCallback(ConstLaserScanStampedPtr &msg) {
     cv::imshow("lidar", im);
     mutex.unlock();
 }
+
+/// Start of temp location for drawing the path the robot took, needs to be moved to fuzzycontrol.cpp
+void drawRobotActualPath(float x, float y); // takes the robots location as input
+{
+float scaleFromPictureToModel =1/1.41735;
+float resizeFactor = 20;
+float resizedWidth =20*resizeFactor*scaleFromPictureToModel; // width meaning x
+float resizedHeight =15*resizeFactor*scaleFromPictureToModel;
+//float thisX =x;
+cv::Mat map = cv::imread("../map/smallworld_floor_plan.png");
+cv::Mat mapCopy; // move to header file fuzzycontrol.h
+cv::resize(map, mapCopy, cv::Size(resizedWidth, resizedHeight), cv::INTER_NEAREST);
+cv::Point2f position ((resizedWidth-x), (resizedHeight-y));
+cv::circle(cv::Mat mapCopy, position, 3,  cv::Scalar(0, 0, 255), 1,8, 0);
+}
+
+void saveRobotPath()
+{
+    cv::imwrite("../test/test1.png", mapCopy);
+}
+
+
+
+/// end of temp location for drawing the path the robot took, needs to be moved to fuzzycontrol.cpp
+
 int main(int _argc, char **_argv) {
     // Load gazebo
     gazebo::client::setup(_argc, _argv);
@@ -206,9 +231,11 @@ int main(int _argc, char **_argv) {
     gazebo::transport::SubscriberPtr cameraSubscriberHough =
             node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackHough, &camera);
 
+
+///////////////////////////////
+
+
     // creates subscriber to marble collecting?
-
-
 
 #if DEBUG_LINE_DETECT == 1
     gazebo::transport::SubscriberPtr lineDetectTestSub =
