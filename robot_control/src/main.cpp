@@ -12,7 +12,7 @@
 #include "../includes/Vision.h"
 #include "../includes/line_detect.hpp"
 
-#define AUTO_MOVE 0
+#define AUTO_MOVE 1
 
 #include "../includes/line.hpp"
 
@@ -273,11 +273,13 @@ int main(int _argc, char **_argv) {
 #endif
 
     controller.setGoal(-1.5,2);
-
+    // Collector variables
     float marbleDir, marbleDist;
     bool marbleFound;
     bool collectMode = false;
     bool collectDone = true;
+
+
     // Loop
     while (true) {
 
@@ -292,7 +294,6 @@ int main(int _argc, char **_argv) {
 
         if (marbleFound)
             {
-            //std::cout << "Marble Found! Direction: " << marbleDir << ", distance: " << marbleDist << std::endl;
             collectMode = true;
             controller.setMarble(marbleDir, marbleDist);
             }
