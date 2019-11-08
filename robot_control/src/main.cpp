@@ -232,10 +232,6 @@ int main(int _argc, char **_argv) {
             node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackHough, &camera);
 
 
-///////////////////////////////
-
-
-    // creates subscriber to marble collecting?
 
 #if DEBUG_LINE_DETECT == 1
     gazebo::transport::SubscriberPtr lineDetectTestSub =
@@ -296,45 +292,54 @@ int main(int _argc, char **_argv) {
     float marbleDir, marbleDist;
     bool marbleFound;
     bool collectMode = false;
+    bool collectDone = true;
     // Loop
     while (true) {
 
-
-
-        std::tie(marbleFound, marbleDir, marbleDist) = camera.getMarble();
-        if (marbleFound)
-            {
-            std::cout << "Marble Found! Direction: " << marbleDir << ", distance: " << marbleDist << std::endl;
-            collectMode = true;
-            }
-
-
-        //controller.move(speed,dir);///// calls move in FuzzyControl class
-
-
-
-        gazebo::common::Time::MSleep(10);
-        //
+        gazebo::common::Time::MSleep(10);     //
         mutex.lock();
         int key = cv::waitKey(1);
         mutex.unlock();
-        //
-        if (key == key_esc)
-            break;
 
-        if ((key == key_up) && (speed <= 1.2f))
-            speed += 0.05;
-        else if ((key == key_down) && (speed >= -1.2f))
-            speed -= 0.05;
-        else if ((key == key_right) && (dir <= 0.4f))
-            dir += 0.05;
-        else if ((key == key_left) && (dir >= -0.4f))
-            dir -= 0.05;
-        else {
-            // slow down
-            //      speed *= 0.1;
-            //      dir *= 0.1;
+        marbleFound = false;
+        std::tie(marbleFound, marbleDir, marbleDist) = camera.getMarble();
+        if (marbleFound)
+            {
+            //std::cout << "Marble Found! Direction: " << marbleDir << ", distance: " << marbleDist << std::endl;
+            collectMode = true;
+            controller.setMarble(marbleDir, marbleDist);
             }
+
+        if (collectMode == true)
+        {
+            collectDone = controller.collect(speed, dir);
+            if (collectDone == true) {
+                collectMode = false;
+            }
+        }
+        else
+        {
+            controller.move(speed, dir);
+        }
+
+        //
+//        if (key == key_esc)
+//            break;
+//
+//        if ((key == key_up) && (speed <= 1.2f))
+//            speed += 0.05;
+//        else if ((key == key_down) && (speed >= -1.2f))
+//            speed -= 0.05;
+//        else if ((key == key_right) && (dir <= 0.4f))
+//            dir += 0.05;
+//        else if ((key == key_left) && (dir >= -0.4f))
+//            dir -= 0.05;
+//        else {
+//            // slow down
+//            //      speed *= 0.1;
+//            //      dir *= 0.1;
+//            }
+
 
         // Generate a pose
         ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
