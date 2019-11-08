@@ -208,8 +208,6 @@ int main(int _argc, char **_argv) {
 
     // creates subscriber to marble collecting?
 
-
-
 #if DEBUG_LINE_DETECT == 1
     gazebo::transport::SubscriberPtr lineDetectTestSub =
 		node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", &line_detect::line_detect_test::lidarCallback, &lineDetectTest );
@@ -316,6 +314,7 @@ int main(int _argc, char **_argv) {
 //            //      speed *= 0.1;
 //            //      dir *= 0.1;
 //            }
+
 
         // Generate a pose
         ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));

@@ -22,6 +22,7 @@ public:
 
     bool collect(float & speed, float & dir);
     void setMarble(const float mDir, const float mDist);
+
 #if ENABLE_GLOBAL_POS == 1
     void poseCallbackNew(ConstPosesStampedPtr &_msg); // temp cheat method
 #endif

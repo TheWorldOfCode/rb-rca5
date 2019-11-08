@@ -35,6 +35,7 @@ FuzzyControl::FuzzyControl()
     steer = roamEngine->getOutputVariable("steer");
     speed = roamEngine->getOutputVariable("speed");
 
+
     //################## Collecting Engine #############################
     collectorEngine = FllImporter().fromFile(
             "../fuzzy_control/CollectorEngine.fll");
@@ -128,7 +129,6 @@ void FuzzyControl::move(float &speed2, float &dir) {
         speed2 = speedTmp;
     }
 
-
 #if FUZZY_DEBUG == 1
     std::cout << "output dir " << dir << std::endl;
 #endif
@@ -211,6 +211,7 @@ void FuzzyControl::setMarble(const float mDir, const float mDist)
     std::cout << "Marble at ( " << marbleX << " , " << marbleY << " )" << std::endl;
 
 }
+
 
 void FuzzyControl::setGoal(float x, float y)
 {
