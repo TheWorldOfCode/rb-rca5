@@ -109,15 +109,15 @@ std::tuple<float, float> Vision::calculateMarblePos(cv::Point center, int radius
     // Calculate marble angle:
     const int cameraWidth = 320;
     float normCenterX = 0.5 - (float(center.x) / float(cameraWidth)); // Normalize to match image width of 1, and set middle of image as 0.
-    float marbleDir = atan2(normCenterX, 2);
+    float marbleDir = atan2(normCenterX, 1);
 
     // Calculate (estimate) marble distance
     // Assumptions: Triangle between edges of marble and is perpendicular no matter position
     //              Distance "to screen" is 2 no matter the angle
 
     // Hough Circles outputs a radius,
-    float normDiameter = (float(radius)*4) / float(cameraWidth);
-    float marbleDist = 2 / normDiameter;
+    float normDiameter = (float(radius)*2) / float(cameraWidth);
+    float marbleDist = 1 / normDiameter;
 
 
 
