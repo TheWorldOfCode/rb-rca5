@@ -23,6 +23,9 @@ public:
     bool collect(float & speed, float & dir);
     void setMarble(const float mDir, const float mDist);
 
+    void drawRobotActualPath(float x, float y); /// Public because Dan might need it
+    void saveRobotPathToFile(); /// Public because Dan might need it
+
 #if ENABLE_GLOBAL_POS == 1
     void poseCallbackNew(ConstPosesStampedPtr &_msg); // temp cheat method
 #endif
@@ -49,5 +52,9 @@ private:
     fl::OutputVariable * collectSteer;
     fl::OutputVariable * collectSpeed;
     std::tuple<float, float, float> marbleCoordinates;
+
+    cv::Mat map;
+    cv::Mat mapCopy;
+
 };
 

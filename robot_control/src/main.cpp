@@ -11,6 +11,9 @@
 #include "../includes/FuzzyControl.h"
 #include "../includes/Vision.h"
 #include "../includes/line_detect.hpp"
+
+#define AUTO_MOVE 0
+
 #include "../includes/line.hpp"
 
 
@@ -160,29 +163,6 @@ void lidarCallback(ConstLaserScanStampedPtr &msg) {
     mutex.unlock();
 }
 
-/// Start of temp location for drawing the path the robot took, needs to be moved to fuzzycontrol.cpp
-void drawRobotActualPath(float x, float y); // takes the robots location as input
-{
-float scaleFromPictureToModel =1/1.41735;
-float resizeFactor = 20;
-float resizedWidth =20*resizeFactor*scaleFromPictureToModel; // width meaning x
-float resizedHeight =15*resizeFactor*scaleFromPictureToModel;
-//float thisX =x;
-cv::Mat map = cv::imread("../map/smallworld_floor_plan.png");
-cv::Mat mapCopy; // move to header file fuzzycontrol.h
-cv::resize(map, mapCopy, cv::Size(resizedWidth, resizedHeight), cv::INTER_NEAREST);
-cv::Point2f position ((resizedWidth-x), (resizedHeight-y));
-cv::circle(cv::Mat mapCopy, position, 3,  cv::Scalar(0, 0, 255), 1,8, 0);
-}
-
-void saveRobotPath()
-{
-    cv::imwrite("../test/test1.png", mapCopy);
-}
-
-
-
-/// end of temp location for drawing the path the robot took, needs to be moved to fuzzycontrol.cpp
 
 int main(int _argc, char **_argv) {
     // Load gazebo
@@ -284,9 +264,14 @@ int main(int _argc, char **_argv) {
     const int key_down = 84;
     const int key_right = 83;
     const int key_esc = 27;
-
-    float speed = 0.0;//////////////////////
+#if AUTO_MOVE ==0
+    float speed = 0.0;
     float dir = 0.0;
+# else
+    float speed = 0.3;
+    float dir = 0.0;
+#endif
+
     controller.setGoal(-1.5,2);
 
     float marbleDir, marbleDist;
@@ -300,9 +285,11 @@ int main(int _argc, char **_argv) {
         mutex.lock();
         int key = cv::waitKey(1);
         mutex.unlock();
+#if AUTO_MOVE ==1
 
         marbleFound = false;
         std::tie(marbleFound, marbleDir, marbleDist) = camera.getMarble();
+
         if (marbleFound)
             {
             //std::cout << "Marble Found! Direction: " << marbleDir << ", distance: " << marbleDist << std::endl;
@@ -321,24 +308,25 @@ int main(int _argc, char **_argv) {
         {
             controller.move(speed, dir);
         }
+# else
 
-        //
-//        if (key == key_esc)
-//            break;
-//
-//        if ((key == key_up) && (speed <= 1.2f))
-//            speed += 0.05;
-//        else if ((key == key_down) && (speed >= -1.2f))
-//            speed -= 0.05;
-//        else if ((key == key_right) && (dir <= 0.4f))
-//            dir += 0.05;
-//        else if ((key == key_left) && (dir >= -0.4f))
-//            dir -= 0.05;
-//        else {
-//            // slow down
-//            //      speed *= 0.1;
-//            //      dir *= 0.1;
-//            }
+        if (key == key_esc)
+            break;
+
+        if ((key == key_up) && (speed <= 1.2f))
+            speed += 0.05;
+        else if ((key == key_down) && (speed >= -1.2f))
+            speed -= 0.05;
+        else if ((key == key_right) && (dir <= 0.4f))
+            dir += 0.05;
+        else if ((key == key_left) && (dir >= -0.4f))
+            dir -= 0.05;
+        //else {
+            // slow down
+            //      speed *= 0.1;
+            //      dir *= 0.1;
+          //}
+#endif
 
 
         // Generate a pose
