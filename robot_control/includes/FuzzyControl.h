@@ -44,6 +44,8 @@ private:
     boost::mutex  mutexFuzzy;
 
     fl::Engine * collectorEngine;
+    fl::InputVariable * obsDirCol;
+    fl::InputVariable * obsDistCol;
     fl::InputVariable * marbleDir;
     fl::InputVariable * marbleDist;
     fl::OutputVariable * collectSteer;

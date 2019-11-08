@@ -44,7 +44,11 @@ FuzzyControl::FuzzyControl()
     if (not collectorEngine->isReady(&status))
         throw Exception("[collectorEngine error] collectorEngine is not ready:n" + status2, FL_AT);
 
+
+    obsDirCol = collectorEngine->getInputVariable("obsDir");
+    obsDistCol = collectorEngine->getInputVariable("obsDist");
     marbleDir = collectorEngine->getInputVariable("marbleDir");
+    marbleDist = collectorEngine->getInputVariable("marbleDist");
 
     collectSteer = collectorEngine->getOutputVariable("steer");
     collectSpeed = collectorEngine->getOutputVariable("speed");
@@ -151,26 +155,26 @@ bool FuzzyControl::collect(float & speed2, float & dir)
     flag = true;
     while(flag);        // Waits for lidars to produce data
 
-//    float closest = 10;
-//    int index = -1;
-//
-//    for(int i = 0; i < lidar_data.size() ;i++)// finds closest range from lidar scanner
-//    {
-//        if (closest > std::get<1>(lidar_data[i]))
-//        {
-//            closest = std::get<1>(lidar_data[i]);
-//            index = i;
-//        }
-//    }
-//
+    float closest = 10;
+    int index = -1;
 
-//    obsDir->setValue(std::get<0>(lidar_data[index]));
+    for(int i = 0; i < lidar_data.size() ;i++)// finds closest range from lidar scanner
+    {
+        if (closest > std::get<1>(lidar_data[i]))
+        {
+            closest = std::get<1>(lidar_data[i]);
+            index = i;
+        }
+    }
 
-//    obsDist->setValue(std::get<1>(lidar_data[index]));
+
+    obsDirCol->setValue(std::get<0>(lidar_data[index]));
+    obsDistCol->setValue(std::get<1>(lidar_data[index]));
 
     float goalDir=calculateGoalDir('m');
 
     marbleDir -> setValue(goalDir);
+    marbleDist -> setValue(std::get<2>(marbleCoordinates));
 
     lidar_data.clear();
 
