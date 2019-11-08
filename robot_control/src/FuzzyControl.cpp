@@ -15,29 +15,44 @@
 
 using namespace fl;
 
-FuzzyControl::FuzzyControl() {
+FuzzyControl::FuzzyControl()
+{
     flag = false;
 
-    engine = FllImporter().fromFile(
-//            "../fuzzy_control/playground");// bemærk et niveau op, kunne også have flyttet .fll
-            "../fuzzy_control/playground.fll");// bemærk et niveau op, kunne også have flyttet .fll
+    //################## Roaming Engine ##################################
+
+    roamEngine = FllImporter().fromFile(
+            "../fuzzy_control/ObstacleAvoidance.fll");// bemærk et niveau op, kunne også have flyttet .fll
 
     std::string status;
-    if (not engine->isReady(&status))
-        throw Exception("[engine error] engine is not ready:n" + status, FL_AT);
+    if (not roamEngine->isReady(&status))
+        throw Exception("[roamEngine error] roamEngine is not ready:n" + status, FL_AT);
 
-    obsDir = engine->getInputVariable("obsDir");
-    obsDist = engine->getInputVariable("obsDist");
-    goal = engine->getInputVariable("goal");
+    obsDir = roamEngine->getInputVariable("obsDir");
+    obsDist = roamEngine->getInputVariable("obsDist");
+    goal = roamEngine->getInputVariable("goal");
 
-    steer = engine->getOutputVariable("steer");
-    speed = engine->getOutputVariable("speed");
+    steer = roamEngine->getOutputVariable("steer");
+    speed = roamEngine->getOutputVariable("speed");
+
+    //################## Collecting Engine #############################
+    collectorEngine = FllImporter().fromFile(
+            "../fuzzy_control/CollectorEngine.fll");
+
+    std::string status2;
+    if (not collectorEngine->isReady(&status))
+        throw Exception("[collectorEngine error] collectorEngine is not ready:n" + status2, FL_AT);
+
+    marbleDir = collectorEngine->getInputVariable("marbleDir");
+
+    collectSteer = collectorEngine->getOutputVariable("steer");
+    collectSpeed = collectorEngine->getOutputVariable("speed");
 }
 
 void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
-     //std::cout << ">> " << msg->DebugString() << std::endl;
+    //std::cout << ">> " << msg->DebugString() << std::endl;
     float angle_min = float(msg->scan().angle_min());
-      double angle_max = msg->scan().angle_max();
+    double angle_max = msg->scan().angle_max();
     float angle_increment = float(msg->scan().angle_step());
 
     float range_min = float(msg->scan().range_min());
@@ -54,7 +69,7 @@ void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
         float angle = angle_min + i * angle_increment;
         float range = std::min(float(msg->scan().ranges(i)), range_max);
 
-        if((range < 3) && (flag))
+        if((range < 10) && (flag))
             {
             lidar_data.push_back(std::tuple<float, float>(angle, range));
             }
@@ -86,12 +101,12 @@ void FuzzyControl::move(float &speed2, float &dir) {
 
     obsDist->setValue(std::get<1>(lidar_data[index]));
 
-    float goalDir=calculateGoalDir();
+    float goalDir=calculateGoalDir('g');
 
-    goal -> setValue(goalDir);////
+    goal -> setValue(goalDir);
 
     //std::cout << " obsDist: "<< std::get<1>(lidar_data[index]) << std::endl;
-   // std::cout << " obsDir: "<< std::get<0>(lidar_data[index]) << std::endl;
+    // std::cout << " obsDir: "<< std::get<0>(lidar_data[index]) << std::endl;
 
 
 
@@ -103,9 +118,16 @@ void FuzzyControl::move(float &speed2, float &dir) {
 
     lidar_data.clear();
 
-    engine->process();
-    dir = steer->getValue();
-    speed2 = speed->getValue();
+    roamEngine->process();
+    float dirTmp = steer->getValue();
+    float speedTmp = speed->getValue();
+
+    if (!isnan(dirTmp) && !isnan(speedTmp))
+    {
+        dir = dirTmp;
+        speed2 = speedTmp;
+    }
+
 
 #if FUZZY_DEBUG == 1
     std::cout << "output dir " << dir << std::endl;
@@ -113,9 +135,86 @@ void FuzzyControl::move(float &speed2, float &dir) {
 
 }
 
+bool FuzzyControl::collect(float & speed2, float & dir)
+{
+    flag = true;
+    while(flag);        // Waits for lidars to produce data
+
+//    float closest = 10;
+//    int index = -1;
+//
+//    for(int i = 0; i < lidar_data.size() ;i++)// finds closest range from lidar scanner
+//    {
+//        if (closest > std::get<1>(lidar_data[i]))
+//        {
+//            closest = std::get<1>(lidar_data[i]);
+//            index = i;
+//        }
+//    }
+//
+
+//    obsDir->setValue(std::get<0>(lidar_data[index]));
+
+//    obsDist->setValue(std::get<1>(lidar_data[index]));
+
+    float goalDir=calculateGoalDir('m');
+
+    marbleDir -> setValue(goalDir);
+
+    lidar_data.clear();
+
+    collectorEngine->process();
+    float dirTmp = collectSteer->getValue();
+    float speedTmp = collectSpeed->getValue();
+
+    if (!isnan(dirTmp) && !isnan(speedTmp))
+    {
+        dir = dirTmp;
+        speed2 = speedTmp;
+    }
+
+    bool marbleCollected = false;
+    float robX = std::get<0>(currentCoordinates);
+    float robY = std::get<1>(currentCoordinates);
+    float marbleX = std::get<0>(marbleCoordinates);
+    float marbleY = std::get<1>(marbleCoordinates);
+
+    if (abs(robX - marbleX) < 0.5 && abs(robY - marbleY) < 0.5) {
+        marbleCollected = true;
+    }
+    return marbleCollected;
+
+}
+
+void FuzzyControl::setMarble(const float mDir, const float mDist)
+{
+    float robX = std::get<0>(currentCoordinates);
+    float robY = std::get<1>(currentCoordinates);
+    float robAngle = std::get<2>(currentCoordinates);
+
+    // Marble position in robot's local coordinates
+    cv::Mat marbleLocal = cv::Mat(2, 1, CV_32FC1);
+    marbleLocal.at<float>(0,0) = cos(mDir) * mDist;
+    marbleLocal.at<float>(1,0) = sin(mDir) * mDist;
+
+    // The inverse of the robot's rotational matrix
+    cv::Mat rotMatrixInverse = cv::Mat(2, 2, CV_32FC1);
+    rotMatrixInverse.at<float>(0,0) = cos(robAngle); rotMatrixInverse.at<float>(0,1) = -sin(robAngle);
+    rotMatrixInverse.at<float>(1,0) = sin(robAngle); rotMatrixInverse.at<float>(1,1) = cos(robAngle);
+
+    cv::Mat deltaGlob = rotMatrixInverse * marbleLocal;
+
+    float marbleX = deltaGlob.at<float>(0,0);
+    float marbleY = deltaGlob.at<float>(1,0);
+
+    marbleCoordinates = std::tie(marbleX, marbleY);
+    std::cout << "Marble at ( " << marbleX << " , " << marbleY << " )" << std::endl;
+
+}
+
 void FuzzyControl::setGoal(float x, float y)
 {
-  goalCoordinates = std::tie(x,y);
+    goalCoordinates = std::tie(x,y);
 }
 
 #if ENABLE_GLOBAL_POS == 1
@@ -126,14 +225,14 @@ void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
     mutexFuzzy.lock();
     for (int i = 0; i < msg->pose_size(); i++) {
         if (msg->pose(i).name() == "pioneer2dx") {
-             x = msg->pose(i).position().x();
-             y = msg->pose(i).position().y();
+            x = msg->pose(i).position().x();
+            y = msg->pose(i).position().y();
 
-             // Quaternions
-             qw = msg->pose(i).orientation().w();
-             qx = msg->pose(i).orientation().x();
-             qy = msg->pose(i).orientation().y();
-             qz = msg->pose(i).orientation().z(); // seen from x direction a left rotation is positive, and a right is negative TROR JEG
+            // Quaternions
+            qw = msg->pose(i).orientation().w();
+            qx = msg->pose(i).orientation().x();
+            qy = msg->pose(i).orientation().y();
+            qz = msg->pose(i).orientation().z(); // seen from x direction a left rotation is positive, and a right is negative TROR JEG
 
             }
 
@@ -155,16 +254,25 @@ void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
 }
 #endif
 
-float FuzzyControl::calculateGoalDir()
+float FuzzyControl::calculateGoalDir(char c)
 {
     /// method using atan2:
 //    mutexFuzzy.lock();
     float robAngle = std::get<2>(currentCoordinates);
     float robX =std::get<0>(currentCoordinates);
     float robY =std::get<1>(currentCoordinates);
+    float goalX, goalY;
+
 //    mutexFuzzy.unlock();
-    float goalX = std::get<0>(goalCoordinates);
-    float goalY = std::get<1>(goalCoordinates);
+    if (c == 'm'){
+        goalX = std::get<0>(marbleCoordinates);
+        goalY = std::get<1>(marbleCoordinates);
+    }
+    else
+    {
+        goalX = std::get<0>(goalCoordinates);
+        goalY = std::get<1>(goalCoordinates);
+    }
 
     float deltaX = goalX - robX;
     float deltaY = goalY - robY;
@@ -178,6 +286,16 @@ float FuzzyControl::calculateGoalDir()
     cv::Mat goalLocal = rotMatrice * cv::Mat(distRobGoal);
 
     float goalDir = atan2((goalLocal.at<float> (1,0)),(goalLocal.at<float> (0,0)));
+
+
+//    std::cout << " goal global X: " << std::get<0>(goalCoordinates) << " goal global Y: " << std::get<1>(goalCoordinates)<<std::endl;
+//
+//    std::cout << " rob global X: " << robX << " rob global Y: " << robY<< " rob angle: "<< robAngle << std::endl;
+//
+//    std::cout << " goal Local X: "<< goalLocal.at<float> (0,0)<< " goalLocal Y: "<< goalLocal.at<float> (1,0) << std::endl;
+//
+//    std::cout << " goalDir: "<< goalDir << std::endl << std::endl;
+
 
 //    cv::Mat goalTrans = cv::Mat(3,3,CV_32FC1);
 //
@@ -207,13 +325,6 @@ float FuzzyControl::calculateGoalDir()
 //    float goalDir = atan2((goalLocal.at<float> (1,0)),(goalLocal.at<float> (0,0)));
 
 
-        std::cout << " goal global X: " << std::get<0>(goalCoordinates) << " goal global Y: " << std::get<1>(goalCoordinates)<<std::endl;
-
-        std::cout << " rob global X: " << robX << " rob global Y: " << robY<< " rob angle: "<< robAngle << std::endl;
-
-        std::cout << " goal Local X: "<< goalLocal.at<float> (0,0)<< " goalLocal Y: "<< goalLocal.at<float> (1,0) << std::endl;
-
-        std::cout << " goalDir: "<< goalDir << std::endl << std::endl;
 
 
 

@@ -21,15 +21,20 @@ public:
 
     void cameraCallbackHough(ConstImageStampedPtr &msg);
 
+    std::tuple<bool, float, float> getMarble();
+
     ~Vision();
 
 private:
+    std::tuple<float, float> calculateMarblePos(cv::Point, int);
 
     boost::mutex  mutexCamera;
     std::size_t width ;
     std::size_t height ;
     const char * data ;
+    float marbleDir;
+    float marbleDist;
+    bool marbleFound;
 
 };
-
 

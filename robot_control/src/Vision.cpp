@@ -27,6 +27,8 @@ void Vision::cameraCallbackRaw(ConstImageStampedPtr &msg)
 
 void Vision::cameraCallbackHough(ConstImageStampedPtr &msg)
 {
+    marbleFound = false;
+
     cv::Mat im(int(height), int(width), CV_8UC3, const_cast<char *>(data));
 
     im = im.clone();
@@ -48,13 +50,14 @@ void Vision::cameraCallbackHough(ConstImageStampedPtr &msg)
                  30, // minimum number of votes
                  0, 0); // min and max radius
 
-        // the following values work okay, but not perfect
+    // the following values work okay, but not perfect
 //            1,   // accumulator resolution (size of the image / 2)
 //            3000,  // minimum distance between two circles
 //            20, // Canny high threshold
 //            30, // minimum number of votes
 //            0, 0); // min and max radius
-
+    int biggestRadius = 0;
+    cv::Point closestMarble;
     /// Draw the circles detected
     for (size_t i = 0; i < circles.size(); i++)
         {
@@ -70,6 +73,12 @@ void Vision::cameraCallbackHough(ConstImageStampedPtr &msg)
 //            std::cout << "Position of the white ball is:" << center << std::endl; //
 //            current = center;
 //            }
+        if (radius > biggestRadius)
+            {
+            biggestRadius = radius;
+            closestMarble = center;
+            marbleFound = true;
+            }
         }
     ////
 
@@ -77,12 +86,50 @@ void Vision::cameraCallbackHough(ConstImageStampedPtr &msg)
     cv::imshow("Camera with Hough circle transform", im);// temp name
     mutexCamera.unlock();
 
+    // from measurement:
+    // Camera spread:   ~ 0.5 rad, +-0.25 rad
+    //        distance: ~ 2
+    //        image x:  ~ 1
+
+    if ( marbleFound == true )
+        {
+        std::tie(marbleDir, marbleDist) = calculateMarblePos(closestMarble, biggestRadius);
+        }
+
+}
+
+std::tuple<bool, float, float> Vision::getMarble()
+{
+    return std::tuple<bool, float, float>(marbleFound, marbleDir, marbleDist);
+}
+
+
+std::tuple<float, float> Vision::calculateMarblePos(cv::Point center, int radius)
+{
+    // Calculate marble angle:
+    const int cameraWidth = 320;
+    float normCenterX = 0.5 - (float(center.x) / float(cameraWidth)); // Normalize to match image width of 1, and set middle of image as 0.
+    float marbleDir = atan2(normCenterX, 1);
+
+    // Calculate (estimate) marble distance
+    // Assumptions: Triangle between edges of marble and is perpendicular no matter position
+    //              Distance "to screen" is 2 no matter the angle
+
+    // Hough Circles outputs a radius,
+    float normDiameter = (float(radius)*2) / float(cameraWidth);
+    float marbleDist = 1 / normDiameter;
+
+
+
+
+    return std::tuple<float, float> (marbleDir, marbleDist);
 }
 
 Vision::~Vision()
 {
 
 }
+
 
 
 

@@ -20,17 +20,19 @@ public:
     void move(float & speed, float & dir);
     void setGoal(const float x, const float y);
 
+    bool collect(float & speed, float & dir);
+    void setMarble(const float mDir, const float mDist);
 #if ENABLE_GLOBAL_POS == 1
     void poseCallbackNew(ConstPosesStampedPtr &_msg); // temp cheat method
 #endif
 
-    float calculateGoalDir();
+    float calculateGoalDir(char c);
 
     ~FuzzyControl();
 private:
     std::vector<std::tuple<float, float>> lidar_data;
     bool flag ;
-    fl::Engine * engine;
+    fl::Engine * roamEngine;
     fl::InputVariable * obsDir;
     fl::InputVariable * obsDist;
     fl::InputVariable * goal;
@@ -40,6 +42,10 @@ private:
     std::tuple< float, float> goalCoordinates;
     boost::mutex  mutexFuzzy;
 
+    fl::Engine * collectorEngine;
+    fl::InputVariable * marbleDir;
+    fl::OutputVariable * collectSteer;
+    fl::OutputVariable * collectSpeed;
+    std::tuple<float, float> marbleCoordinates;
 };
-
 
