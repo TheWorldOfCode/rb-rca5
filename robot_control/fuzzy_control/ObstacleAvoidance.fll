@@ -6,7 +6,6 @@ InputVariable: obsDir
   range: -3.142 3.142
   lock-range: false
   term: left Triangle -1.571 1.571 3.142
-  #term: front Triangle -1.571 0.000 1.571
   term: right Triangle -3.142 -1.571 0.571
 
 InputVariable: obsDist

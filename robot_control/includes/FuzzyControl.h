@@ -45,8 +45,9 @@ private:
 
     fl::Engine * collectorEngine;
     fl::InputVariable * marbleDir;
+    fl::InputVariable * marbleDist;
     fl::OutputVariable * collectSteer;
     fl::OutputVariable * collectSpeed;
-    std::tuple<float, float> marbleCoordinates;
+    std::tuple<float, float, float> marbleCoordinates;
 };
 

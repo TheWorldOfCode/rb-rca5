@@ -82,6 +82,16 @@ void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
 
 void FuzzyControl::move(float &speed2, float &dir) {
 
+    float robX = std::get<0>(currentCoordinates); float robY = std::get<1>(currentCoordinates);
+    float goalX = std::get<0>(goalCoordinates); float goalY = std::get<1>(goalCoordinates);
+
+    if (abs(robX - goalX) < 0.1 && abs(robY - goalY) < 0.1) {
+        speed2 = 0;
+        return;
+    }
+
+
+
     flag=true;
     while(flag);
 
@@ -102,7 +112,7 @@ void FuzzyControl::move(float &speed2, float &dir) {
 
     obsDist->setValue(std::get<1>(lidar_data[index]));
 
-    float goalDir=calculateGoalDir('g');
+    float goalDir = calculateGoalDir('g');
 
     goal -> setValue(goalDir);
 
@@ -132,6 +142,7 @@ void FuzzyControl::move(float &speed2, float &dir) {
 #if FUZZY_DEBUG == 1
     std::cout << "output dir " << dir << std::endl;
 #endif
+
 
 }
 
@@ -207,7 +218,7 @@ void FuzzyControl::setMarble(const float mDir, const float mDist)
     float marbleX = deltaGlob.at<float>(0,0);
     float marbleY = deltaGlob.at<float>(1,0);
 
-    marbleCoordinates = std::tie(marbleX, marbleY);
+    marbleCoordinates = std::tie(marbleX, marbleY, mDist);
     std::cout << "Marble at ( " << marbleX << " , " << marbleY << " )" << std::endl;
 
 }
