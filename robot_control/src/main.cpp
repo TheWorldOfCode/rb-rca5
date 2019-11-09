@@ -14,6 +14,7 @@
 
 #define AUTO_MOVE 1
 
+
 #define IGNORE_MARBLE 1
 
 
@@ -281,6 +282,8 @@ int main(int _argc, char **_argv) {
     bool marbleFound;
     bool collectMode = false;
     bool collectDone = true;
+
+
     // Loop
     while (true) {
 
@@ -299,7 +302,6 @@ int main(int _argc, char **_argv) {
 
         if (marbleFound)
             {
-            //std::cout << "Marble Found! Direction: " << marbleDir << ", distance: " << marbleDist << std::endl;
             collectMode = true;
             controller.setMarble(marbleDir, marbleDist);
             }
