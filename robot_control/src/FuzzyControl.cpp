@@ -54,6 +54,8 @@ FuzzyControl::FuzzyControl()
     collectSpeed = collectorEngine->getOutputVariable("speed");
 
     map = cv::imread("../map/smallworld_floor_plan.png");// Load smallworld map, for use in drawing the robots path
+    cv::resize(map, mapCopy, cv::Size(resizedWidth, resizedHeight), cv::INTER_NEAREST);
+
 }
 
 void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
@@ -91,10 +93,13 @@ void FuzzyControl::move(float &speed2, float &dir) {
     float robX = std::get<0>(currentCoordinates); float robY = std::get<1>(currentCoordinates);
     float goalX = std::get<0>(goalCoordinates); float goalY = std::get<1>(goalCoordinates);
     drawRobotActualPath(robX, robY);
+    static int print=1;
 
-    if (abs(robX - goalX) < 0.1 && abs(robY - goalY) < 0.1) {
+    if (abs(robX - goalX) < 0.1 && abs(robY - goalY) < 0.1 && print) {
         speed2 = 0;
+        std::cout << "HURRA" << std::endl;
         saveRobotPathToFile();
+        print--;
         return;
     }
 
@@ -396,30 +401,24 @@ float FuzzyControl::calculateGoalDir(char c)
 
 }
 
-FuzzyControl::~FuzzyControl() {
-
-    lidar_data.clear();
-
-}
-
 void FuzzyControl::drawRobotActualPath(float x, float y)
 {
-    float scaleFromPictureToModel =1/1.41735;
-    float resizeFactor = 20;
-    float resizedWidth =20*resizeFactor*scaleFromPictureToModel; // width meaning x
-    float resizedHeight =15*resizeFactor*scaleFromPictureToModel;
-//float thisX =x;
-
-    cv::resize(map, mapCopy, cv::Size(resizedWidth, resizedHeight), cv::INTER_NEAREST);
-    cv::Point2f position ((resizedWidth-x), (resizedHeight-y));
-    cv::circle(mapCopy, position, 3,  cv::Scalar(0, 0, 255), 1,8, 0);
-
+    cv::Point2f positionToDraw ((resizedWidth/2-(x*combindedResizeFacotor)), (resizedHeight/2-(y*combindedResizeFacotor)));
+    cv::circle(mapCopy, positionToDraw, 10,  cv::Scalar(0, 0, 255), -1,8, 0);
 }
 
 void FuzzyControl::saveRobotPathToFile()
 {
     cv::imwrite("../test/test1.png", mapCopy);
 }
+
+FuzzyControl::~FuzzyControl() {
+
+    lidar_data.clear();
+
+}
+
+
 
 
 

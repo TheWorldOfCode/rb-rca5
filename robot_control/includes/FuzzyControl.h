@@ -58,5 +58,11 @@ private:
     cv::Mat map;
     cv::Mat mapCopy;
 
+    float scaleFromPictureToModel =1/1.41735;
+    float resizeFactor = 80;
+    float combindedResizeFacotor=scaleFromPictureToModel*resizeFactor;
+    float resizedWidth =20*combindedResizeFacotor; // width meaning x
+    float resizedHeight =15*combindedResizeFacotor;
+
 };
 

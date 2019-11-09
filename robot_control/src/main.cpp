@@ -12,7 +12,10 @@
 #include "../includes/Vision.h"
 #include "../includes/line_detect.hpp"
 
-#define AUTO_MOVE 0
+#define AUTO_MOVE 1
+
+#define IGNORE_MARBLE 1
+
 
 #include "../includes/line.hpp"
 
@@ -272,7 +275,7 @@ int main(int _argc, char **_argv) {
     float dir = 0.0;
 #endif
 
-    controller.setGoal(-1.5,2);
+    controller.setGoal(1,0);
 
     float marbleDir, marbleDist;
     bool marbleFound;
@@ -286,6 +289,10 @@ int main(int _argc, char **_argv) {
         int key = cv::waitKey(1);
         mutex.unlock();
 #if AUTO_MOVE ==1
+
+#if IGNORE_MARBLE == 1
+        controller.move(speed, dir);
+#else
 
         marbleFound = false;
         std::tie(marbleFound, marbleDir, marbleDist) = camera.getMarble();
@@ -308,6 +315,7 @@ int main(int _argc, char **_argv) {
         {
             controller.move(speed, dir);
         }
+#endif
 # else
 
         if (key == key_esc)
