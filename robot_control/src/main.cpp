@@ -276,7 +276,7 @@ int main(int _argc, char **_argv) {
     float dir = 0.0;
 #endif
 
-    controller.setGoal(1,0);
+    controller.setGoal(-4,-1);
 
     float marbleDir, marbleDist;
     bool marbleFound;

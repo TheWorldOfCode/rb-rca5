@@ -54,7 +54,13 @@ FuzzyControl::FuzzyControl()
     collectSpeed = collectorEngine->getOutputVariable("speed");
 
     map = cv::imread("../map/smallworld_floor_plan.png");// Load smallworld map, for use in drawing the robots path
-    cv::resize(map, mapCopy, cv::Size(resizedWidth, resizedHeight), cv::INTER_NEAREST);
+    cv::resize(map, mapCopy, cv::Size(resizedWidth, resizedHeight), 0,0,cv::INTER_NEAREST);
+
+    /// Mark start point
+    cv::Point2f startPos ((resizedWidth/2+(std::get<0>(currentCoordinates)*combindedResizeFacotor)), (resizedHeight/2-(std::get<1>(currentCoordinates)*combindedResizeFacotor))); //
+    cv::circle(mapCopy, startPos, 20,  cv::Scalar(0, 255, 0), -1,8, 0);
+
+
 
 }
 
@@ -240,6 +246,9 @@ void FuzzyControl::setMarble(const float mDir, const float mDist)
 void FuzzyControl::setGoal(float x, float y)
 {
     goalCoordinates = std::tie(x,y);
+    /// Mark end point
+    cv::Point2f endPos ((resizedWidth/2+(std::get<0>(goalCoordinates)*combindedResizeFacotor)), (resizedHeight/2-(std::get<1>(goalCoordinates)*combindedResizeFacotor))); //
+    cv::circle(mapCopy, endPos, 20,  cv::Scalar(0, 0, 255), -1,8, 0);
 }
 
 #if ENABLE_GLOBAL_POS == 1
@@ -403,8 +412,12 @@ float FuzzyControl::calculateGoalDir(char c)
 
 void FuzzyControl::drawRobotActualPath(float x, float y)
 {
-    cv::Point2f positionToDraw ((resizedWidth/2-(x*combindedResizeFacotor)), (resizedHeight/2-(y*combindedResizeFacotor)));
-    cv::circle(mapCopy, positionToDraw, 10,  cv::Scalar(0, 0, 255), -1,8, 0);
+
+
+    cv::Point2f positionToDraw ((resizedWidth/2+(x*combindedResizeFacotor)), (resizedHeight/2-(y*combindedResizeFacotor))); //
+
+
+    cv::circle(mapCopy, positionToDraw, 10,  cv::Scalar(255, 0, 0), -1,8, 0);
 }
 
 void FuzzyControl::saveRobotPathToFile()
