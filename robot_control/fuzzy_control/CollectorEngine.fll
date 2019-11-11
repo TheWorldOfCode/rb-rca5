@@ -2,12 +2,10 @@
 Engine: CollectorEngine
 InputVariable: obsDir
   enabled: true
-  range: -3.142 3.142
+  range: -1.963 1.963
   lock-range: false
-  term: left Triangle -0.571 1.000 3.142
-  term: right Triangle -3.142 -1.000 0.571
-  term: behindR Ramp -2.000 -3.142
-  term: behindL Ramp 2.000 3.142
+  term: left Triangle -0.393 0.785 1.193
+  term: right Triangle -1.193 -0.785 0.393
 
 InputVariable: obsDist
   enabled: true
@@ -76,14 +74,10 @@ RuleBlock: mamdani
   rule: if marbleDist is notClose and marbleDir is right and obsDist is notClose then speed is slow and steer is right
   rule: if marbleDist is notClose and marbleDir is right and obsDist is close and obsDir is right then speed is slow and steer is left
   rule: if marbleDist is notClose and marbleDir is right and obsDist is close and obsDir is left then speed is slow and steer is right
-  #rule: if marbleDist is notClose and marbleDir is right and obsDist is close and obsDir is behindR then speed is slow and steer is right
-  #rule: if marbleDist is notClose and marbleDir is right and obsDist is close and obsDir is behindL then speed is slow and steer is right
 
   rule: if marbleDist is notClose and marbleDir is left and obsDist is notClose then speed is slow and steer is left
   rule: if marbleDist is notClose and marbleDir is left and obsDist is close and obsDir is right then speed is slow and steer is left
   rule: if marbleDist is notClose and marbleDir is left and obsDist is close and obsDir is left then speed is slow and steer is right
-  #rule: if marbleDist is notClose and marbleDir is left and obsDist is close and obsDir is behindR then speed is slow and steer is left
-  #rule: if marbleDist is notClose and marbleDir is left and obsDist is close and obsDir is behindL then speed is slow and steer is left
 
   rule: if marbleDist is notClose and marbleDir is forward and obsDist is notClose then speed is slow and steer is forward
   rule: if marbleDist is notClose and marbleDir is forward and obsDist is close and obsDir is right then speed is slow and steer is forward
