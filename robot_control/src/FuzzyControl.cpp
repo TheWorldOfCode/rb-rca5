@@ -2,7 +2,8 @@
 // Created by lars on 10/14/19.
 //
 #define FUZZY_DEBUG 0
-
+#define DRAW_PATH 0
+#define OVERRIDE_CV_MARBLE 0
 
 #include <string>
 #include <cmath>        // std::atan2
@@ -47,8 +48,8 @@ FuzzyControl::FuzzyControl()
 
     obsDirCol = collectorEngine->getInputVariable("obsDir");
     obsDistCol = collectorEngine->getInputVariable("obsDist");
-    marbleDir = collectorEngine->getInputVariable("marbleDir");
-    marbleDist = collectorEngine->getInputVariable("marbleDist");
+    marbleDir = collectorEngine->getInputVariable("goalDir");
+    marbleDist = collectorEngine->getInputVariable("goalDist");
 
     collectSteer = collectorEngine->getOutputVariable("steer");
     collectSpeed = collectorEngine->getOutputVariable("speed");
@@ -96,6 +97,7 @@ void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
 
 void FuzzyControl::move(float &speed2, float &dir) {
 
+#if DRAW_PATH == 1
     float robX = std::get<0>(currentCoordinates); float robY = std::get<1>(currentCoordinates);
     float goalX = std::get<0>(goalCoordinates); float goalY = std::get<1>(goalCoordinates);
     drawRobotActualPath(robX, robY);
@@ -108,7 +110,7 @@ void FuzzyControl::move(float &speed2, float &dir) {
         print--;
         return;
     }
-
+#endif
 
 
     flag=true;
@@ -202,6 +204,11 @@ bool FuzzyControl::collect(float & speed2, float & dir)
         dir = dirTmp;
         speed2 = speedTmp;
     }
+//    std::cout << "Input:" "obsDir: " << std::get<0>(lidar_data[index])
+//              << "\t obsDist: " << std::get<1>(lidar_data[index])
+//              << "\t marbleDir: " << goalDir
+//              << "\t marbleDist: " << std::get<2>(marbleCoordinates) << "\n";
+//    std::cout << "Output: speed: " << speed2 << "\t dir: " << dir << std::endl << std::endl;
 
     bool marbleCollected = false;
     float robX = std::get<0>(currentCoordinates);
@@ -237,8 +244,16 @@ void FuzzyControl::setMarble(const float mDir, const float mDist)
     float marbleX = deltaGlob.at<float>(0,0);
     float marbleY = deltaGlob.at<float>(1,0);
 
+#if OVERRIDE_CV_MARBLE == 0
     marbleCoordinates = std::tie(marbleX, marbleY, mDist);
-    std::cout << "Marble at ( " << marbleX << " , " << marbleY << " )" << std::endl;
+        std::cout << "Marble at ( " << marbleX << " , " << marbleY << " )" << std::endl;
+
+#else
+    marbleCoordinates = std::tuple<float, float, float> (5, 0, mDist);
+    std::cout << "Marble at ( " << 5 << " , " << 0 << " )" << std::endl;
+
+
+#endif
 
 }
 
@@ -321,7 +336,10 @@ float FuzzyControl::calculateGoalDir(char c)
 
     float goalDir = atan2((goalLocal.at<float> (1,0)),(goalLocal.at<float> (0,0)));
 
-
+    if (c == 'm') {
+        float mDist = sqrt(deltaX*deltaX + deltaY*deltaY);
+        std::get<2>(marbleCoordinates) = mDist;
+    }
 //    std::cout << " goal global X: " << std::get<0>(goalCoordinates) << " goal global Y: " << std::get<1>(goalCoordinates)<<std::endl;
 //
 //    std::cout << " rob global X: " << robX << " rob global Y: " << robY<< " rob angle: "<< robAngle << std::endl;

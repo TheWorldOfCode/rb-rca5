@@ -276,7 +276,7 @@ int main(int _argc, char **_argv) {
     float dir = 0.0;
 #endif
 
-    controller.setGoal(-4,-1);
+    controller.setGoal(0,-1);
 
     float marbleDir, marbleDist;
     bool marbleFound;
@@ -298,7 +298,6 @@ int main(int _argc, char **_argv) {
 #if IGNORE_MARBLE == 1
         controller.move(speed, dir);
 #else
-
         marbleFound = false;
         std::tie(marbleFound, marbleDir, marbleDist) = camera.getMarble();
 
@@ -322,27 +321,19 @@ int main(int _argc, char **_argv) {
 
         }
 
-//
-//        if (marbleFound)
-//            {
-//            collectMode = true;
-//            controller.setMarble(marbleDir, marbleDist);
-//            }
-
-        if (collectMode)
-        {
+        if (collectMode) {
             collectDone = controller.collect(speed, dir);
             if (collectDone) {
-                collectMode = false; std::cout << "collectMode == false" << std::endl;
+                collectMode = false;
+                std::cout << "collectMode == false" << std::endl;
                 avgMarbleDir = 0;
                 avgMarbleDist = 0;
                 marbleDetections = 0;
             }
-        }
-        else
-        {
+        } else {
             controller.move(speed, dir);
         }
+
 #endif
 # else
 

@@ -3,19 +3,20 @@
 Engine: ObstacleAvoidance.fll
 InputVariable: obsDir
   enabled: true
-  range: -3.142 3.142
+  range: -1.963 1.963
   lock-range: false
-  term: left Triangle -1.571 1.571 3.142
-  term: right Triangle -3.142 -1.571 0.571
+  term: left Triangle -0.393 0.785 1.963
+  term: forward Triangle -0.393 0.000 0.393
+  term: right Triangle -1.963 -0.785 0.393
 
 InputVariable: obsDist
   enabled: true
   range: 0.000 10.000
   lock-range: false
   term: veryClose Rectangle 0.000 0.500
-  term: close Ramp 1.500 1.000 #1
-  term: medium Triangle 1.000 2.000 3.000
-  term: far Ramp 2.000 3.000 #1
+  term: close Ramp 1.000 0.000
+  term: medium Triangle 0.750 1.500 2.250
+  term: far Ramp 1.500 2.250
 
 InputVariable: goal
   enabled: true
@@ -34,9 +35,9 @@ OutputVariable: steer
   default: nan
   lock-previous: false
   term: hardRight Ramp 0.500 1.000
-  term: right Triangle 0.000 0.500 1.000
+  term: right Triangle 0.000 0.750 1.000
   term: forward Triangle -0.010 0.000 0.010
-  term: left Triangle -1.000 -0.500 0.000
+  term: left Triangle -1.000 -0.750 0.000
   term: hardLeft Ramp -0.500 -1.000
 
 OutputVariable: speed
@@ -59,10 +60,12 @@ RuleBlock: mamdani
   implication: AlgebraicProduct
   activation: General
   rule: if obsDir is left and obsDist is veryClose then steer is hardRight and speed is stop
+  rule: if obsDir is forward and obsDist is veryClose then steer is hardRight and speed is stop
   rule: if obsDir is right and obsDist is veryClose then steer is hardLeft and speed is stop
 
-  rule: if obsDir is left and obsDist is close then steer is hardRight and speed is slow#
-  rule: if obsDir is right and obsDist is close then steer is hardLeft and speed is slow#
+  rule: if obsDir is left and obsDist is close then steer is hardRight and speed is slow
+  rule: if obsDir is forward and obsDist is close then steer is right and speed is stop
+  rule: if obsDir is right and obsDist is close then steer is hardLeft and speed is slow
 
   rule: if obsDist is medium and goal is left then steer is left and speed is medium
   rule: if obsDist is medium and goal is forward then steer is forward and speed is medium
