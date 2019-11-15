@@ -15,7 +15,7 @@
 #define AUTO_MOVE 1
 
 
-#define IGNORE_MARBLE 1
+#define IGNORE_MARBLE 0
 
 
 #include "../includes/line.hpp"
@@ -278,11 +278,14 @@ int main(int _argc, char **_argv) {
 
     controller.setGoal(-5,-3.5);
 
+
     float marbleDir, marbleDist;
     bool marbleFound;
     bool collectMode = false;
-    bool collectDone = true;
-
+    bool collectDone;
+    const int marbleDetectionLimit = 4;
+    int marbleDetections = 0;
+    float avgMarbleDir = 0, avgMarbleDist = 0;
 
     // Loop
     while (true) {
@@ -291,32 +294,47 @@ int main(int _argc, char **_argv) {
         mutex.lock();
         int key = cv::waitKey(1);
         mutex.unlock();
-#if AUTO_MOVE ==1
 
+#if AUTO_MOVE ==1
 #if IGNORE_MARBLE == 1
         controller.move(speed, dir);
 #else
-
         marbleFound = false;
         std::tie(marbleFound, marbleDir, marbleDist) = camera.getMarble();
 
-        if (marbleFound)
-            {
-            collectMode = true;
-            controller.setMarble(marbleDir, marbleDist);
+        if ( marbleFound ) {
+            if (marbleDetections < marbleDetectionLimit) {
+                marbleDetections++;
+                avgMarbleDir += marbleDir;
+                avgMarbleDist += marbleDist;
+                std::cout << "Marble detections: " << marbleDetections << std::endl;
+                std::cout << "MarbleDir:    " << marbleDir << "\tMarbleDist:    " << marbleDist << std::endl;
+            }
+            if (marbleDetections == marbleDetectionLimit) {
+                marbleDetections++;
+                avgMarbleDir /= float(marbleDetectionLimit);
+                avgMarbleDist /= float(marbleDetectionLimit);
+                std::cout << "avgMarbleDir: " << avgMarbleDir << "\tavgMarbleDist: " << avgMarbleDist << std::endl;
+
+                controller.setMarble(avgMarbleDir, avgMarbleDist);
+                collectMode = true; std::cout << "collectMode == true" << std::endl;
             }
 
-        if (collectMode == true)
-        {
-            collectDone = controller.collect(speed, dir);
-            if (collectDone == true) {
-                collectMode = false;
-            }
         }
-        else
-        {
+
+        if (collectMode) {
+            collectDone = controller.collect(speed, dir);
+            if (collectDone) {
+                collectMode = false;
+                std::cout << "collectMode == false" << std::endl;
+                avgMarbleDir = 0;
+                avgMarbleDist = 0;
+                marbleDetections = 0;
+            }
+        } else {
             controller.move(speed, dir);
         }
+
 #endif
 # else
 
