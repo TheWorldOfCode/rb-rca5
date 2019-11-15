@@ -276,7 +276,8 @@ int main(int _argc, char **_argv) {
     float dir = 0.0;
 #endif
 
-    controller.setGoal(-5,-3.5);
+   // controller.setGoal(-13.5,5);
+    //controller.setGoal(0/0 ,0/0);
 
 
     float marbleDir, marbleDist;
@@ -285,7 +286,8 @@ int main(int _argc, char **_argv) {
     bool collectDone;
     const int marbleDetectionLimit = 4;
     int marbleDetections = 0;
-    float avgMarbleDir = 0, avgMarbleDist = 0;
+    float mX, mY, mXnew, mYnew;
+    float avgMarbleX = 0, avgMarbleY = 0;
 
     // Loop
     while (true) {
@@ -302,24 +304,63 @@ int main(int _argc, char **_argv) {
         marbleFound = false;
         std::tie(marbleFound, marbleDir, marbleDist) = camera.getMarble();
 
+//        if ( marbleFound ) {
+//            if (marbleDetections < marbleDetectionLimit) {
+//                marbleDetections++;
+//                avgMarbleDir += marbleDir;
+//                avgMarbleDist += marbleDist;
+//                std::cout << "Marble detections: " << marbleDetections << std::endl;
+//                std::cout << "MarbleDir:    " << marbleDir << "\tMarbleDist:    " << marbleDist << std::endl;
+//            }
+//            if (marbleDetections == marbleDetectionLimit) {
+//                marbleDetections++;
+//                avgMarbleDir /= float(marbleDetectionLimit);
+//                avgMarbleDist /= float(marbleDetectionLimit);
+//                std::cout << "avgMarbleDir: " << avgMarbleDir << "\tavgMarbleDist: " << avgMarbleDist << std::endl;
+//
+//                controller.setMarble(avgMarbleDir, avgMarbleDist);
+//                collectMode = true; std::cout << "collectMode == true" << std::endl;
+//            }
         if ( marbleFound ) {
-            if (marbleDetections < marbleDetectionLimit) {
-                marbleDetections++;
-                avgMarbleDir += marbleDir;
-                avgMarbleDist += marbleDist;
-                std::cout << "Marble detections: " << marbleDetections << std::endl;
-                std::cout << "MarbleDir:    " << marbleDir << "\tMarbleDist:    " << marbleDist << std::endl;
-            }
+            if (marbleDetections < marbleDetectionLimit)
+                {
+                std::tie(mXnew, mYnew) = controller.globMarble(marbleDir, marbleDist);
+                if (marbleDetections == 0) {
+                    mX = mXnew;
+                    mY = mYnew;
+                }
+                if (abs(mXnew - mX) < 0.5 && abs(mYnew - mY) < 0.5)
+                    {
+                    marbleDetections++;
+                    avgMarbleX += mXnew;
+                    avgMarbleY += mYnew;
+                    mX = mXnew;
+                    mY = mYnew;
+                    std::cout << "Marble detections: " << marbleDetections << std::endl;
+                    std::cout << "MarbleDir:    " << marbleDir << "\tMarbleDist:    " << marbleDist << std::endl;
+                    std::cout << "MarbleX:    " << mX << "\tMarbleY:    " << mY << std::endl;
+
+                    }
+                else {
+                    marbleDetections = 0;
+                    avgMarbleX = 0;
+                    avgMarbleY = 0;
+                    mX = mXnew;
+                    mY = mYnew;
+                    }
+                }
+
+
+
             if (marbleDetections == marbleDetectionLimit) {
                 marbleDetections++;
-                avgMarbleDir /= float(marbleDetectionLimit);
-                avgMarbleDist /= float(marbleDetectionLimit);
-                std::cout << "avgMarbleDir: " << avgMarbleDir << "\tavgMarbleDist: " << avgMarbleDist << std::endl;
+                avgMarbleX /= float(marbleDetectionLimit);
+                avgMarbleY /= float(marbleDetectionLimit);
+                std::cout << "avgMarbleX: " << avgMarbleX << "\tavgMarbleY: " << avgMarbleY << std::endl;
 
-                controller.setMarble(avgMarbleDir, avgMarbleDist);
+                controller.setMarble(avgMarbleX, avgMarbleY);
                 collectMode = true; std::cout << "collectMode == true" << std::endl;
-            }
-
+                }
         }
 
         if (collectMode) {
@@ -327,8 +368,8 @@ int main(int _argc, char **_argv) {
             if (collectDone) {
                 collectMode = false;
                 std::cout << "collectMode == false" << std::endl;
-                avgMarbleDir = 0;
-                avgMarbleDist = 0;
+                avgMarbleX = 0;
+                avgMarbleY = 0;
                 marbleDetections = 0;
             }
         } else {

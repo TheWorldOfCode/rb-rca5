@@ -47,7 +47,7 @@ void Vision::cameraCallbackHough(ConstImageStampedPtr &msg)
                  1,   // accumulator resolution (size of the image / 2)
                  3000,  // minimum distance between two circles
                  15, // Canny high threshold
-                 30, // minimum number of votes
+                 20, // minimum number of votes
                  0, 0); // min and max radius
 
     // the following values work okay, but not perfect

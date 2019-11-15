@@ -21,7 +21,8 @@ public:
     void setGoal(const float x, const float y);
 
     bool collect(float & speed, float & dir);
-    void setMarble(const float mDir, const float mDist);
+    std::tuple<float, float> globMarble(const float mDir, const float mDist);
+    void setMarble(float x, float y);
 
     void drawRobotActualPath(float x, float y); /// Public because Dan might need it
     void saveRobotPathToFile(); /// Public because Dan might need it
@@ -61,8 +62,8 @@ private:
     float scaleFromPictureToModel =1/1.41735;
     float resizeFactor = 80;
     float combindedResizeFacotor=scaleFromPictureToModel*resizeFactor;
-    float resizedWidth =20*combindedResizeFacotor; // width meaning x
-    float resizedHeight =15*combindedResizeFacotor;
+    float resizedWidth =20*combindedResizeFacotor*scaleFromPictureToModel; // width meaning x
+    float resizedHeight =15*combindedResizeFacotor*scaleFromPictureToModel;
 
 };
 

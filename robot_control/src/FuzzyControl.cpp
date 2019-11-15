@@ -2,7 +2,8 @@
 // Created by lars on 10/14/19.
 //
 #define FUZZY_DEBUG 0
-#define DRAW_PATH 0
+#define DRAW_PATH 1
+#define FREE_ROAM 1
 #define OVERRIDE_CV_MARBLE 0
 
 #include <string>
@@ -39,7 +40,7 @@ FuzzyControl::FuzzyControl()
 
     //################## Collecting Engine #############################
     collectorEngine = FllImporter().fromFile(
-            "../fuzzy_control/CollectorEngine.fll");
+            "../fuzzy_control/playground.fll");
 
     std::string status2;
     if (not collectorEngine->isReady(&status))
@@ -103,7 +104,7 @@ void FuzzyControl::move(float &speed2, float &dir) {
     drawRobotActualPath(robX, robY);
     static int print=1;
 
-    if (abs(robX - goalX) < 0.1 && abs(robY - goalY) < 0.1 && print) {
+    if (abs(robX - goalX) < 0.15 && abs(robY - goalY) < 0.15 && print) {
         speed2 = 0;
         std::cout << "HURRA" << std::endl;
         saveRobotPathToFile();
@@ -132,10 +133,12 @@ void FuzzyControl::move(float &speed2, float &dir) {
     obsDir->setValue(std::get<0>(lidar_data[index]));
 
     obsDist->setValue(std::get<1>(lidar_data[index]));
-
+#if FREE_ROAM == 0
     float goalDir = calculateGoalDir('g');
 
     goal -> setValue(goalDir);
+
+#endif
 
     //std::cout << " obsDist: "<< std::get<1>(lidar_data[index]) << std::endl;
     // std::cout << " obsDir: "<< std::get<0>(lidar_data[index]) << std::endl;
@@ -158,6 +161,9 @@ void FuzzyControl::move(float &speed2, float &dir) {
     {
         dir = dirTmp;
         speed2 = speedTmp;
+    }
+    else {
+        std::cout << "Hov hov du!\n";
     }
 
 #if FUZZY_DEBUG == 1
@@ -223,7 +229,7 @@ bool FuzzyControl::collect(float & speed2, float & dir)
 
 }
 
-void FuzzyControl::setMarble(const float mDir, const float mDist)
+std::tuple<float, float> FuzzyControl::globMarble(const float mDir, const float mDist)
 {
     float robX = std::get<0>(currentCoordinates);
     float robY = std::get<1>(currentCoordinates);
@@ -241,12 +247,12 @@ void FuzzyControl::setMarble(const float mDir, const float mDist)
 
     cv::Mat deltaGlob = rotMatrixInverse * marbleLocal;
 
-    float marbleX = deltaGlob.at<float>(0,0);
-    float marbleY = deltaGlob.at<float>(1,0);
+    float marbleX = deltaGlob.at<float>(0,0) + robX;
+    float marbleY = deltaGlob.at<float>(1,0) + robY;
 
 #if OVERRIDE_CV_MARBLE == 0
-    marbleCoordinates = std::tie(marbleX, marbleY, mDist);
-        std::cout << "Marble at ( " << marbleX << " , " << marbleY << " )" << std::endl;
+    return std::tie(marbleX, marbleY);
+        //std::cout << "Marble at ( " << marbleX << " , " << marbleY << " )" << std::endl;
 
 #else
     marbleCoordinates = std::tuple<float, float, float> (5, 0, mDist);
@@ -255,6 +261,12 @@ void FuzzyControl::setMarble(const float mDir, const float mDist)
 
 #endif
 
+}
+
+void FuzzyControl::setMarble(float x, float y)
+{
+    std::get<0>(marbleCoordinates) = x;
+    std::get<1>(marbleCoordinates) = y;
 }
 
 
@@ -340,92 +352,8 @@ float FuzzyControl::calculateGoalDir(char c)
         float mDist = sqrt(deltaX*deltaX + deltaY*deltaY);
         std::get<2>(marbleCoordinates) = mDist;
     }
-//    std::cout << " goal global X: " << std::get<0>(goalCoordinates) << " goal global Y: " << std::get<1>(goalCoordinates)<<std::endl;
-//
-//    std::cout << " rob global X: " << robX << " rob global Y: " << robY<< " rob angle: "<< robAngle << std::endl;
-//
-//    std::cout << " goal Local X: "<< goalLocal.at<float> (0,0)<< " goalLocal Y: "<< goalLocal.at<float> (1,0) << std::endl;
-//
-//    std::cout << " goalDir: "<< goalDir << std::endl << std::endl;
-
-
-//    cv::Mat goalTrans = cv::Mat(3,3,CV_32FC1);
-//
-//    goalTrans.at<float>(0,0)=cos(robAngle); goalTrans.at<float>(0,1)=sin(robAngle); goalTrans.at<float>(0,2)=-robX;
-//
-//    goalTrans.at<float>(1,0)=-sin(robAngle); goalTrans.at<float>(1,1)=cos(robAngle); goalTrans.at<float>(1,2)=-robY;
-
-//    goalTrans.at<float>(0,0)=cos(0); goalTrans.at<float>(0,1)=-sin(0); goalTrans.at<float>(0,2)=-robX;
-//
-//    goalTrans.at<float>(1,0)=sin(0); goalTrans.at<float>(1,1)=cos(0); goalTrans.at<float>(1,2)=-robY;
-
-//    goalTrans.at<float>(0,0)=cos(robAngle); goalTrans.at<float>(0,1)=-sin(robAngle); goalTrans.at<float>(0,2)=-std::get<0>(goalCoordinates);
-//
-//    goalTrans.at<float>(1,0)=sin(robAngle); goalTrans.at<float>(1,1)=cos(robAngle); goalTrans.at<float>(1,2)=-std::get<1>(goalCoordinates);
-
-//    goalTrans.at<float>(2,0)=float(0); goalTrans.at<float>(2,1)=float(0); goalTrans.at<float>(2,2)=float(1);
-//
-//    cv::Mat goalGlobal = cv::Mat(3,1,CV_32FC1);
-//    goalGlobal.at<float>(0,0)=std::get<0>(goalCoordinates);
-//    goalGlobal.at<float>(1,0)=std::get<1>(goalCoordinates);
-//    goalGlobal.at<float>(2,0)=float(1);
-
-//    cv::Mat goalGlobal = {std::get<0>(goalCoordinates),std::get<1>(goalCoordinates),float(1)};
-
-//    cv::Mat goalLocal = goalTrans * goalGlobal;
-
-//    float goalDir = atan2((goalLocal.at<float> (1,0)),(goalLocal.at<float> (0,0)));
-
-
-
-
-
-//    float deltaX=std::get<0>(goalCoordinates) - std::get<0>(currentCoordinates);
-//
-//    float deltaXAbs = fabs(deltaX);
-//
-//    float deltaY = std::get<1>(goalCoordinates) - std::get<1>(currentCoordinates);
-//
-//    float goalDirTmp = (std::atan2(deltaY, deltaX)) - std::get<2>(currentCoordinates);
-//
-//
-//    std::cout << " deltaX: "<< deltaX<< " deltaY: "<< deltaY << " goalDirTmp: " << goalDirTmp << std::endl;
-//
-//
-//    if( (-3<goalDirTmp<3))
-//        {
-//        goalDir=goalDirTmp;
-//        }
-//    else
-//        {
-//        std::cout << "swappin!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-//        goalDir = 3;
-////        goalDir = goalDirTmp-3.14;
-////        goalDir =std::get<2>(currentCoordinates) - (std::atan2(deltaY, deltaXAbs));
-//        }
-
-
-
-    /// method using acos:
-//    float deltaX=std::get<0>(goalCoordinates) - std::get<0>(currentCoordinates);
-//    float deltaY = std::get<1>(goalCoordinates) - std::get<1>(currentCoordinates);
-//
-//    float hypotenuse = sqrtf((deltaX*deltaX)+(deltaY*deltaY));
-//    float goalDir;
-//
-//    std::cout << " deltaX: "<< deltaX<< " deltaY: "<< deltaY<< " hypotenuse: " << hypotenuse << std::endl;
-//    if((deltaX>0) && (hypotenuse>0))
-//        {
-//        goalDir = (acosf(deltaX / hypotenuse)) - std::get<2>(currentCoordinates);
-//        }
-//    else
-//        {
-//        goalDir = (acosf(deltaX / hypotenuse)) - std::get<2>(currentCoordinates)+(3.1416);
-//        }
 
     return goalDir;
-
-
 }
 
 void FuzzyControl::drawRobotActualPath(float x, float y)
@@ -448,6 +376,7 @@ FuzzyControl::~FuzzyControl() {
     lidar_data.clear();
 
 }
+
 
 
 
