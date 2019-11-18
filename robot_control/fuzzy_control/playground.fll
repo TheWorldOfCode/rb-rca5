@@ -8,9 +8,9 @@ InputVariable: obsDir
   #term: left Triangle -0.393 0.785 1.963
   #term: forward Triangle -0.393 0.000 0.393
   #term: right Triangle -1.963 -0.785 0.393
-  term: left Triangle -0.293 0.785 1.963
+  term: left Triangle -0.293 0.785 1.571 #-0.293 0.785 1.963
   term: forward Triangle -0.293 0.000 0.293
-  term: right Triangle -1.963 -0.785 0.293
+  term: right Triangle -1.571 -0.785 0.293 #-1.963 -0.785 0.293
 
 InputVariable: obsDist
   enabled: true
@@ -33,8 +33,8 @@ InputVariable: goalDist
   enabled: true
   range: 0.000 50.000
   lock-range: false
-  term: close Trapezoid 0.000 0.010 2.000 2.500
-  term: notClose Trapezoid 2.000 2.500 50.000 50.100
+  term: close Trapezoid 0.000 0.010 2.500 2.520
+  term: notClose Trapezoid 2.500 2.520 50.000 50.100
 
 OutputVariable: steer
   enabled: true

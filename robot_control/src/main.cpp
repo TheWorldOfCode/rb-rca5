@@ -161,10 +161,10 @@ void lidarCallback(ConstLaserScanStampedPtr &msg) {
     cv::putText(im, std::to_string(sec) + ":" + std::to_string(nsec),
                 cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1.0,
                 cv::Scalar(255, 0, 0));
-
-    mutex.lock();
-    cv::imshow("lidar", im);
-    mutex.unlock();
+   // cv::namedWindow("lidar"); cv::moveWindow("lidar", 0, 0);
+//    mutex.lock();
+//    cv::imshow("lidar", im);
+//    mutex.unlock();
 }
 
 
@@ -272,11 +272,11 @@ int main(int _argc, char **_argv) {
     float speed = 0.0;
     float dir = 0.0;
 # else
-    float speed = 0.3;
+    float speed = 0.0;
     float dir = 0.0;
 #endif
 
-   // controller.setGoal(-13.5,5);
+   controller.setGoal(NULL,NULL);
     //controller.setGoal(0/0 ,0/0);
 
 
@@ -284,7 +284,7 @@ int main(int _argc, char **_argv) {
     bool marbleFound;
     bool collectMode = false;
     bool collectDone;
-    const int marbleDetectionLimit = 4;
+    const int marbleDetectionLimit = 3;
     int marbleDetections = 0;
     float mX, mY, mXnew, mYnew;
     float avgMarbleX = 0, avgMarbleY = 0;

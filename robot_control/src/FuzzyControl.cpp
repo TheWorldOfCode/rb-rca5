@@ -222,7 +222,7 @@ bool FuzzyControl::collect(float & speed2, float & dir)
     float marbleX = std::get<0>(marbleCoordinates);
     float marbleY = std::get<1>(marbleCoordinates);
 
-    if (abs(robX - marbleX) < 0.5 && abs(robY - marbleY) < 0.5) {
+    if (abs(robX - marbleX) < 0.1 && abs(robY - marbleY) < 0.1) {
         marbleCollected = true;
     }
     return marbleCollected;
