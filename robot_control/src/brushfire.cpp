@@ -106,6 +106,8 @@ int generate_brushfire(cv::Mat & source, cv::Mat & dst) {
 #endif
 	}  
 
+	color -= BRUSHFIRE_STEP_SIZE;
+	color -= BRUSHFIRE_STEP_SIZE;
 #if DEBUG_BRUSHFIRE == 1
 	std::cout << "Number of pixel painted " << test  << " of " << source.rows * source.cols << std::endl; 
 	std::cout << "There are visited " << test2 << " pixels" << std::endl;  
