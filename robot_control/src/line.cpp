@@ -27,6 +27,7 @@ line::line(double x1, double y1, double x2, double y2, pointType coordType) {
 	}
 
 	direction = vec2(x2-x1, y2-y1);
+	direction.normalize();  
         point = vec2(x1, y1); 	
 	endPoint = vec2(x2,y2); 
 
@@ -60,6 +61,7 @@ line::line(tuple<double, double> p1, tuple<double, double> p2, pointType coordTy
 	}
 
 	direction = vec2(x2-x1, y2-y1);
+	direction.normalize(); 
 	point = vec2(x1, y1); 	
 	endPoint = vec2(x2,y2); 
 
@@ -67,31 +69,88 @@ line::line(tuple<double, double> p1, tuple<double, double> p2, pointType coordTy
 
 }  
 
-double line::distance_to_point(vec2 p) {
+line::line(vec2 p1, vec2 p2, pointType coordType) {
 
 
-	double num = (p - point) * direction;
+	switch(coordType) {
+
+		case pointType::POLAR:
+			double x1, y1, x2, y2;
+
+			x1 = p1.getX() * cos(p1.getY() );
+		        y1 = p1.getX() * sin(p1.getY() );  	
+
+			x2 = p2.getX() * cos(p1.getY() ); 
+			y2 = p2.getX() * sin(p1.getY() ); 
+			p1 = vec2(x1,y2);
+		        p2 = vec2(x1,y2); 	
+			break;
+		case pointType::CARTESIAN:
+			break;
+	}  
+
+	direction = p2 - p1;
+	direction.normalize();
+        
+	point = p1; 
+	endPoint = p2;
+}  
+
+vec2 line::getDirection() { return direction; }  
+
+double line::distance_to_point(const vec2 p) const {
+
+
+	double num = ((vec2)(p - point)).cross(direction);
 
 	return num / direction.length()  ;
 
 }  
 
 
-double line::distance_to_point(double r, double theta) {
+double line::distance_to_point(const double r, const double theta) const {
 
 	vec2 P0( r*cos(theta) ,  r*sin(theta) ); 	
+	double num = ((vec2) (P0 - point)).cross(direction);
 
-	double num = (P0 - point)* direction;
+
 
 	return num / direction.length()  ;
 
 }  
 
-double line::distance_to_point(std::tuple<double,double> p) {
+double line::distance_to_point( const std::tuple<double,double> p)  const{
 
 	return distance_to_point(get<0>(p), get<1>(p));
 }  
 
+double line::distance_to_line(const line & l) const {
+
+	throw "NOT IMPLEMENT"; 
+
+}  
+
+
+bool line::is_orgotonalt_to(const line & l) const { return direction * l.direction == 0 ? true : false; }  
+
+bool line::is_orgotonalt_to(const line & l, const double threshold) const { 
+
+	double dot = direction * l.direction;
+	dot *= -1;
+
+//	std::cout << "The dot product " << dot << " length "  << direction.length() << " "  << l.direction.length() << " Angle " << std::acos(dot)     << std::endl; 
+	return 0-threshold < dot && dot < threshold ? true : false;
+
+}  
+
+bool line::is_orgotonalt_to(const line & l, const double lowerThreshold, const double upperThreshold) const { 
+
+	double dot = direction * l.direction;
+
+	dot *= -1;
+	return lowerThreshold < dot && dot < upperThreshold ? true : false;
+
+}  
 
 void line::get_point_to_draw_the_line(vec2 & startpt, vec2 & endpt) const {
 
