@@ -11,6 +11,13 @@
 #include "../includes/FuzzyControl.h"
 #include "../includes/Vision.h"
 #include "../includes/line_detect.hpp"
+
+#define AUTO_MOVE 1
+
+
+#define IGNORE_MARBLE 0
+
+
 #include "../includes/line.hpp"
 
 
@@ -154,11 +161,13 @@ void lidarCallback(ConstLaserScanStampedPtr &msg) {
     cv::putText(im, std::to_string(sec) + ":" + std::to_string(nsec),
                 cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1.0,
                 cv::Scalar(255, 0, 0));
-
-    mutex.lock();
-    cv::imshow("lidar", im);
-    mutex.unlock();
+   // cv::namedWindow("lidar"); cv::moveWindow("lidar", 0, 0);
+//    mutex.lock();
+//    cv::imshow("lidar", im);
+//    mutex.unlock();
 }
+
+
 int main(int _argc, char **_argv) {
     // Load gazebo
     gazebo::client::setup(_argc, _argv);
@@ -205,8 +214,6 @@ int main(int _argc, char **_argv) {
     // creates subscriber to camera, with Hough circle transform
     gazebo::transport::SubscriberPtr cameraSubscriberHough =
             node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackHough, &camera);
-
-    // creates subscriber to marble collecting?
 
 
 
@@ -261,37 +268,117 @@ int main(int _argc, char **_argv) {
     const int key_down = 84;
     const int key_right = 83;
     const int key_esc = 27;
-
-    float speed = 0.0;//////////////////////
+#if AUTO_MOVE ==0
+    float speed = 0.0;
     float dir = 0.0;
-    controller.setGoal(-1.5,2);
+# else
+    float speed = 0.0;
+    float dir = 0.0;
+#endif
+
+   controller.setGoal(NULL,NULL);
+    //controller.setGoal(0/0 ,0/0);
+
 
     float marbleDir, marbleDist;
     bool marbleFound;
     bool collectMode = false;
+    bool collectDone;
+    const int marbleDetectionLimit = 3;
+    int marbleDetections = 0;
+    float mX, mY, mXnew, mYnew;
+    float avgMarbleX = 0, avgMarbleY = 0;
+
     // Loop
     while (true) {
 
-
-
-        std::tie(marbleFound, marbleDir, marbleDist) = camera.getMarble();
-        if (marbleFound)
-            {
-            std::cout << "Marble Found! Direction: " << marbleDir << ", distance: " << marbleDist << std::endl;
-            collectMode = true;
-            }
-
-
-        //controller.move(speed,dir);///// calls move in FuzzyControl class
-
-
-
-        gazebo::common::Time::MSleep(10);
-        //
+        gazebo::common::Time::MSleep(10);     //
         mutex.lock();
         int key = cv::waitKey(1);
         mutex.unlock();
-        //
+
+#if AUTO_MOVE ==1
+#if IGNORE_MARBLE == 1
+        controller.move(speed, dir);
+#else
+        marbleFound = false;
+        std::tie(marbleFound, marbleDir, marbleDist) = camera.getMarble();
+
+//        if ( marbleFound ) {
+//            if (marbleDetections < marbleDetectionLimit) {
+//                marbleDetections++;
+//                avgMarbleDir += marbleDir;
+//                avgMarbleDist += marbleDist;
+//                std::cout << "Marble detections: " << marbleDetections << std::endl;
+//                std::cout << "MarbleDir:    " << marbleDir << "\tMarbleDist:    " << marbleDist << std::endl;
+//            }
+//            if (marbleDetections == marbleDetectionLimit) {
+//                marbleDetections++;
+//                avgMarbleDir /= float(marbleDetectionLimit);
+//                avgMarbleDist /= float(marbleDetectionLimit);
+//                std::cout << "avgMarbleDir: " << avgMarbleDir << "\tavgMarbleDist: " << avgMarbleDist << std::endl;
+//
+//                controller.setMarble(avgMarbleDir, avgMarbleDist);
+//                collectMode = true; std::cout << "collectMode == true" << std::endl;
+//            }
+        if ( marbleFound ) {
+            if (marbleDetections < marbleDetectionLimit)
+                {
+                std::tie(mXnew, mYnew) = controller.globMarble(marbleDir, marbleDist);
+                if (marbleDetections == 0) {
+                    mX = mXnew;
+                    mY = mYnew;
+                }
+                if (abs(mXnew - mX) < 0.5 && abs(mYnew - mY) < 0.5)
+                    {
+                    marbleDetections++;
+                    avgMarbleX += mXnew;
+                    avgMarbleY += mYnew;
+                    mX = mXnew;
+                    mY = mYnew;
+                    std::cout << "Marble detections: " << marbleDetections << std::endl;
+                    std::cout << "MarbleDir:    " << marbleDir << "\tMarbleDist:    " << marbleDist << std::endl;
+                    std::cout << "MarbleX:    " << mX << "\tMarbleY:    " << mY << std::endl;
+
+                    }
+                else {
+                    marbleDetections = 0;
+                    avgMarbleX = 0;
+                    avgMarbleY = 0;
+                    mX = mXnew;
+                    mY = mYnew;
+                    }
+                }
+
+
+
+            if (marbleDetections == marbleDetectionLimit) {
+                marbleDetections++;
+                avgMarbleX /= float(marbleDetectionLimit);
+                avgMarbleY /= float(marbleDetectionLimit);
+                std::cout << "avgMarbleX: " << avgMarbleX << "\tavgMarbleY: " << avgMarbleY << std::endl;
+
+                controller.setMarble(avgMarbleX, avgMarbleY);
+                collectMode = true; std::cout << "collectMode == true" << std::endl;
+                }
+        }
+
+        if (collectMode) {
+            collectDone = controller.collect(speed, dir);
+            if (collectDone) {
+                collectMode = false;
+                std::cout << "collectMode == false" << std::endl;
+                avgMarbleX = 0;
+                avgMarbleY = 0;
+                marbleDetections = 0;
+            }
+        } else {
+            controller.move(speed, dir);
+        }
+
+#endif
+# else
+
         if (key == key_esc)
             break;
 
@@ -303,11 +390,13 @@ int main(int _argc, char **_argv) {
             dir += 0.05;
         else if ((key == key_left) && (dir >= -0.4f))
             dir -= 0.05;
-        else {
+        //else {
             // slow down
             //      speed *= 0.1;
             //      dir *= 0.1;
-            }
+          //}
+#endif
+
 
         // Generate a pose
         ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));

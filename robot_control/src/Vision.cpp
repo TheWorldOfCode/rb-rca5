@@ -35,7 +35,16 @@ void Vision::cameraCallbackHough(ConstImageStampedPtr &msg)
 
     cv::cvtColor(im, im, CV_RGB2GRAY);
 
-    GaussianBlur(im, im, cv::Size(9, 9), 2, 0);
+    GaussianBlur(im, im, cv::Size(9, 9), 2, 2); //9,9,2,0
+
+//    cv::Mat im2 = im.clone();
+//    Canny(im, im2, 8, 15);
+////
+////    cv::namedWindow("Canny camera"); cv::moveWindow("Canny camera",0,450);
+//    mutexCamera.lock();
+//    cv::imshow("Canny camera", im2);// temp name
+//    mutexCamera.unlock();
+
 
     ////
     std::vector<cv::Vec3f> circles;
@@ -44,11 +53,11 @@ void Vision::cameraCallbackHough(ConstImageStampedPtr &msg)
     /// Apply the Hough Transform to find the circles
     //
     HoughCircles(im, circles, CV_HOUGH_GRADIENT,
-                 1,   // accumulator resolution (size of the image / 2)
-                 3000,  // minimum distance between two circles
-                 15, // Canny high threshold
-                 30, // minimum number of votes
-                 0, 0); // min and max radius
+                 1,   // accumulator resolution (size of the image / 2)  1
+                 3000,  // minimum distance between two circles      3000
+                 15, // Canny high threshold                         15
+                 25, // minimum number of votes                      20
+                 0, 0); // min and max radius            0, 0
 
     // the following values work okay, but not perfect
 //            1,   // accumulator resolution (size of the image / 2)
@@ -81,7 +90,7 @@ void Vision::cameraCallbackHough(ConstImageStampedPtr &msg)
             }
         }
     ////
-
+    //cv::namedWindow("Camera with Hough circle transform"); cv::moveWindow("Camera with Hough circle transform", 0, 750);
     mutexCamera.lock();
     cv::imshow("Camera with Hough circle transform", im);// temp name
     mutexCamera.unlock();
@@ -109,15 +118,15 @@ std::tuple<float, float> Vision::calculateMarblePos(cv::Point center, int radius
     // Calculate marble angle:
     const int cameraWidth = 320;
     float normCenterX = 0.5 - (float(center.x) / float(cameraWidth)); // Normalize to match image width of 1, and set middle of image as 0.
-    float marbleDir = atan2(normCenterX, 2);
+    float marbleDir = atan2(normCenterX, 1);
 
     // Calculate (estimate) marble distance
     // Assumptions: Triangle between edges of marble and is perpendicular no matter position
     //              Distance "to screen" is 2 no matter the angle
 
     // Hough Circles outputs a radius,
-    float normDiameter = (float(radius)*4) / float(cameraWidth);
-    float marbleDist = 2 / normDiameter;
+    float normDiameter = (float(radius)*2) / float(cameraWidth);
+    float marbleDist = 1 / normDiameter;
 
 
 
