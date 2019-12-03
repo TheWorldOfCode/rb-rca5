@@ -2,8 +2,8 @@
 // Created by lars on 10/14/19.
 //
 #define FUZZY_DEBUG 0
-#define DRAW_PATH 1
-#define FREE_ROAM 1
+#define DRAW_PATH 0
+#define FREE_ROAM 0
 #define OVERRIDE_CV_MARBLE 0
 
 #include <string>
@@ -33,6 +33,7 @@ FuzzyControl::FuzzyControl()
     obsDir = roamEngine->getInputVariable("obsDir");
     obsDist = roamEngine->getInputVariable("obsDist");
     goal = roamEngine->getInputVariable("goal");
+    goalDistance = roamEngine->getInputVariable("goalDist");
 
     steer = roamEngine->getOutputVariable("steer");
     speed = roamEngine->getOutputVariable("speed");
@@ -96,11 +97,12 @@ void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
 
 }
 
-void FuzzyControl::move(float &speed2, float &dir) {
+bool FuzzyControl::move(float &speed2, float &dir) {
 
-#if DRAW_PATH == 1
     float robX = std::get<0>(currentCoordinates); float robY = std::get<1>(currentCoordinates);
     float goalX = std::get<0>(goalCoordinates); float goalY = std::get<1>(goalCoordinates);
+#if DRAW_PATH == 1
+
     drawRobotActualPath(robX, robY);
     static int print=1;
 
@@ -109,10 +111,8 @@ void FuzzyControl::move(float &speed2, float &dir) {
         std::cout << "HURRA" << std::endl;
         saveRobotPathToFile();
         print--;
-        return;
     }
 #endif
-
 
     flag=true;
     while(flag);
@@ -129,26 +129,20 @@ void FuzzyControl::move(float &speed2, float &dir) {
             }
         }
 
-
     obsDir->setValue(std::get<0>(lidar_data[index]));
-
     obsDist->setValue(std::get<1>(lidar_data[index]));
 #if FREE_ROAM == 0
-    float goalDir = calculateGoalDir('g');
+    if (std::get<0>(goalCoordinates) < std::numeric_limits<float>::max() || std::get<1>(goalCoordinates) < std::numeric_limits<float>::max()) {
+        float goalDir, goalDist;
+        std::tie(goalDir, goalDist) = calculateGoalDir('r');
+        goal->setValue(goalDir);
+        goalDistance->setValue(goalDist);
+    }
 
-    goal -> setValue(goalDir);
-
-#endif
-
-    //std::cout << " obsDist: "<< std::get<1>(lidar_data[index]) << std::endl;
-    // std::cout << " obsDir: "<< std::get<0>(lidar_data[index]) << std::endl;
-
-
-
-
-
-#if FUZZY_DEBUG == 1
-    std::cout<< "angle: "<< std::get<0>(lidar_data[index]) <<std::endl;
+//    float goalDir, goalDist;
+//    std::tie(goalDir, goalDist) = calculateGoalDir('r');
+//    goal->setValue(goalDir);
+//    goalDistance->setValue(goalDist);
 #endif
 
     lidar_data.clear();
@@ -162,15 +156,15 @@ void FuzzyControl::move(float &speed2, float &dir) {
         dir = dirTmp;
         speed2 = speedTmp;
     }
-    else {
-        std::cout << "Hov hov du!\n";
+//    else {
+//        std::cout << "Hov hov du!\n";
+//    }
+
+    bool goalReached = false;
+    if (abs(robX - goalX) < 0.5 && abs(robY - goalY) < 0.3) {
+        goalReached = true;
     }
-
-#if FUZZY_DEBUG == 1
-    std::cout << "output dir " << dir << std::endl;
-#endif
-
-
+    return goalReached;
 }
 
 bool FuzzyControl::collect(float & speed2, float & dir)
@@ -194,10 +188,11 @@ bool FuzzyControl::collect(float & speed2, float & dir)
     obsDirCol->setValue(std::get<0>(lidar_data[index]));
     obsDistCol->setValue(std::get<1>(lidar_data[index]));
 
-    float goalDir=calculateGoalDir('m');
+    float goalDir, goalDist;
+    std::tie(goalDir, goalDist) = calculateGoalDir('m');
 
     marbleDir -> setValue(goalDir);
-    marbleDist -> setValue(std::get<2>(marbleCoordinates));
+    marbleDist -> setValue(goalDist);
 
     lidar_data.clear();
 
@@ -315,7 +310,7 @@ void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
 }
 #endif
 
-float FuzzyControl::calculateGoalDir(char c)
+std::tuple<float, float> FuzzyControl::calculateGoalDir(char c)
 {
     /// method using atan2:
 //    mutexFuzzy.lock();
@@ -347,13 +342,9 @@ float FuzzyControl::calculateGoalDir(char c)
     cv::Mat goalLocal = rotMatrice * cv::Mat(distRobGoal);
 
     float goalDir = atan2((goalLocal.at<float> (1,0)),(goalLocal.at<float> (0,0)));
+    float goalDist = sqrt(deltaX*deltaX + deltaY*deltaY);
 
-    if (c == 'm') {
-        float mDist = sqrt(deltaX*deltaX + deltaY*deltaY);
-        std::get<2>(marbleCoordinates) = mDist;
-    }
-
-    return goalDir;
+    return std::tie(goalDir, goalDist);
 }
 
 void FuzzyControl::drawRobotActualPath(float x, float y)
@@ -375,6 +366,13 @@ FuzzyControl::~FuzzyControl() {
 
     lidar_data.clear();
 
+}
+
+std::tuple<float, float, float> FuzzyControl::getCoords() {
+    return std::tuple<float, float, float>(
+            std::get<0>(currentCoordinates),
+            std::get<1>(currentCoordinates),
+            std::get<2>(currentCoordinates));
 }
 
 

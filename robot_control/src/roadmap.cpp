@@ -5,9 +5,10 @@
 
 #include <limits> 
 #include <cstdlib>
-roadmap::roadmap(const cv::Mat & brushfir, const int max_value) noexcept {
 
-	roads = cv::Mat::zeros(brushfir.rows, brushfir.cols, CV_32S); 
+
+roadmap::roadmap(const cv::Mat & brushfir, const int max_value) noexcept {
+	roads = cv::Mat::zeros(brushfir.rows, brushfir.cols, CV_32S);
 	gerenate_GVD(brushfir, max_value); 
 
 }  
@@ -27,24 +28,20 @@ void roadmap::remove_nodes(std::vector<pixel> & nodes, const pixel p) const noex
 
 void roadmap::gerenate_GVD(const cv::Mat & brushfire, const int max_value) {
 
-	roadMap = brushfire.clone(); 
-
+	roadMap = brushfire.clone();
 	cv::Mat contourImage(roadMap.rows, roadMap.cols, CV_8UC1) ;
 	contourImage.setTo(0); 
 
 	std::vector<pixel> nodes;
-
 	gerenate_GVD1(brushfire, nodes, max_value);
-	gerenate_GVD2(nodes); 
-
+	gerenate_GVD2(nodes);
 	for(const pixel p : nodes )
 	{
 	    contourImage.at<uchar>(p.row, p.col) = 255;  
 	}
-	
 
-	gerenate_GVD2(brushfire, contourImage, nodes); 
-	remove_duplicate_nodes(nodes); 
+	gerenate_GVD2(brushfire, contourImage, nodes);
+	remove_duplicate_nodes(nodes);
 #if DEBUG_ROADMAP == 1
 	for(const pixel p : nodes )
 	{
@@ -55,9 +52,8 @@ void roadmap::gerenate_GVD(const cv::Mat & brushfire, const int max_value) {
 	cv::imwrite("../test/test.png", contourImage ); 
 #endif
 
-
-	gerenate_GVD3(nodes); 
-
+    cv::imwrite("test.png", roadMap);
+	gerenate_GVD3(nodes);
 
 #if DEBUG_ROADMAP == 1
 
@@ -342,10 +338,8 @@ void roadmap::gerenate_GVD2(const cv::Mat & brushfire, const cv::Mat & contourIm
 	cv::Mat contourImage2 = contourImage.clone() ;
 	std::vector<cv::Vec4i> Hier;
 	std::vector<std::vector<cv::Point>> contour;
-
-	cv::threshold(contourImage2 , contourImage2, 255/2, 255, CV_THRESH_BINARY); 
-	cv::findContours(contourImage2, contour, Hier, CV_RETR_LIST, CV_CHAIN_APPROX_NONE); 
-
+	cv::threshold(contourImage2 , contourImage2, 255/2, 255, CV_THRESH_BINARY);
+	cv::findContours(contourImage2, contour, Hier, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 	int base = 0;
 	size_t max = 0;
 
@@ -360,7 +354,6 @@ void roadmap::gerenate_GVD2(const cv::Mat & brushfire, const cv::Mat & contourIm
 	}
 
 
-
 	double distance_min = std::numeric_limits<double>::max(); 
 	cv::Point s1;
 	cv::Point s2;
@@ -370,21 +363,20 @@ void roadmap::gerenate_GVD2(const cv::Mat & brushfire, const cv::Mat & contourIm
 	int old = contour.size()+1;
 	while( ((size_t) old != contour.size() || x < 10) && contour.size() != 1  ) {
 		old = contour.size();
-
 		std::vector<cv::Point> n2;
-		bool flag = false; 
+		bool flag = false;
 		for(const cv::Point p1 : contour[i] )
 		{
 			for(const cv::Point p2 : contour[base])
 			{
-				if(p2 != p1) { 
+				if(p2 != p1) {
 					double distance = (p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y);
-					if(distance < 500) { 
+					if(distance < 500) {
 						std::vector<cv::Point> n1;
-						if(brushfire.at<cv::Vec3b>(p1.y,p1.x)[0] < brushfire.at<cv::Vec3b>(p2.y,p2.x)[0]  ) 
-							flag = move(n1, brushfire, roadMap, p1, p2); 
+						if(brushfire.at<cv::Vec3b>(p1.y,p1.x)[0] < brushfire.at<cv::Vec3b>(p2.y,p2.x)[0]  )
+							flag = move(n1, brushfire, roadMap, p1, p2);
 						else
-							flag = move(n1, brushfire, roadMap, p2, p1); 
+							flag = move(n1, brushfire, roadMap, p2, p1);
 
 						if(flag == true) {
 							if(distance < distance_min) {
@@ -405,7 +397,6 @@ void roadmap::gerenate_GVD2(const cv::Mat & brushfire, const cv::Mat & contourIm
 			}
 
 		}
-
 
 
 		if(n2.size() != 0 ) { 
@@ -537,7 +528,14 @@ int roadmap::new_road(const int start, const direction dir) {
 void roadmap::connect_to_road(const int intersection_number, const int road_number) {
 
 	try {
-		roadsGraph[road_number].connect(intersection_number); 
+	    float distance = -1;
+	    if(roadsGraph[road_number].pt1 != -1) {
+            pixel it1 = graph[roadsGraph[road_number].pt1].point;
+            pixel it2 = graph[intersection_number].point;
+	        distance = sqrt((it1.col-it2.col)*(it1.col-it2.col) + (it1.row-it2.row)*(it1.row-it2.row)); //////////////////////////////////////////////////////////////////////////
+	    }
+
+		roadsGraph[road_number].connect(intersection_number, distance );
 		graph[intersection_number].add_road(road_number); 
 		remove_duplicate_road(intersection_number, road_number); 
 
@@ -599,7 +597,7 @@ void roadmap::connect_to_intersection(const int new_intersection, const directio
 
 	pixel p_new(-1,-1) ; 
 
-	if(use_dir) {  
+	if(use_dir) {
 		switch(dir) {
 			case LEFT:
 				p_new = pixel( p.row, p.col - 1); 
@@ -637,8 +635,74 @@ void roadmap::connect_to_intersection(const int new_intersection, const directio
 	connect_to_road(old_intersection, road_new); 
 }  
 
-void roadmap::split_road(const int road_number, const int new_road) {
+void roadmap::split_road(const direction dir, const int intersection_number) {
+    std::cout << "Enter split road paremeter " << print(dir) << " " << intersection_number << std::endl;
+    pixel p_new(-1,-1);
+    const pixel p = graph[intersection_number].point;
+        switch(dir) {
+            case LEFT:
+                p_new = pixel( p.row, p.col - 1);
+                break;
+            case LEFT_UP:
+                p_new = pixel(p.row - 1, p.col - 1);
+                break;
+            case UP:
+                p_new = pixel(p.row - 1, p.col);
+                break;
+            case RIGHT_UP:
+                p_new = pixel(p.row - 1, p.col + 1);
+                break;
+            case RIGHT:
+                p_new = pixel(p.row, p.col + 1);
+                break;
+            case RIGHT_DOWN:
+                p_new = pixel(p.row + 1, p.col + 1);
+                break;
+            case DOWN:
+                p_new = pixel(p.row + 1, p.col);
+                break;
+            case LEFT_DOWN:
+                p_new = pixel(p.row + 1, p.col - 1);
+                break;
+        }
 
+    const int road_number = roads.at<int>(p_new.row, p_new.col) - 1;
+
+    std::cout << print(graph[intersection_number]) << std::endl;
+    std::cout << print(roadsGraph[road_number]) << std::endl;
+    /*
+    const int unconnected_intersection = roadsGraph[road_number].pt2;
+    roadsGraph[road_number].change(unconnected_intersection, intersection_number);
+    graph[intersection_number].add_road(road_number);
+    remove_duplicate_road(intersection_number, road_number);
+
+    std::cout << print(graph[intersection_number]) << " " << print(graph[unconnected_intersection])
+                << intersection_number << " " << unconnected_intersection << std::endl;
+    direction dir2 = find_direction(graph[intersection_number].point, graph[unconnected_intersection].point);
+    int road_new = new_road(intersection_number, dir2);
+    std::cout << road_number << " " << road_new << std::endl;
+    std::cout << print(roadsGraph[road_new]) << std::endl;
+    graph[unconnected_intersection].remove_road(road_number);
+
+    connect_to_road(unconnected_intersection, road_new);
+    */
+     const int pt1 = roadsGraph[road_number].pt1;
+     const int pt2 = roadsGraph[road_number].pt2;
+    direction dir2 = find_direction(graph[intersection_number].point, graph[pt1].point);
+    direction dir3 = find_direction(graph[intersection_number].point, graph[pt2].point);
+
+    int road_new = new_road(intersection_number, dir2);
+    int road_new2 = new_road(intersection_number,dir3);
+    connect_to_road(pt1, road_new);
+    connect_to_road(pt2, road_new2);
+     std::cout << "Exit" << std::endl;
+    std::cout << print(graph[intersection_number]) << std::endl;
+    std::cout << print(roadsGraph[road_number]) << std::endl;
+    std::cout << print(roadsGraph[road_new]) << std::endl;
+    std::cout << print(roadsGraph[road_new2]) << std::endl;
+    std::cout << print(graph[pt1]) << std::endl;
+    std::cout << print(graph[pt2]) << std::endl;
+    std::cout << std::endl << std::endl;
 }  
 
 #define CHECK_APOVE src.at<float>(row - 1, col)  
@@ -774,7 +838,38 @@ bool roadmap::detect_indre_cornor(const cv::Mat & map, const int row, const int 
 
 	return false;
 
-}  
+}
+
+roadmap::direction roadmap::find_direction(const pixel from, const pixel to) {
+    pixel tmp(to.row - from.row,to.col - from.col);
+    tmp.row /= std::abs(tmp.row);
+    tmp.col /= std::abs(tmp.col);
+
+    std::cout << print(from) << " " << print(to) << " " << print(tmp) << "THIS" << std::endl;
+    if(tmp == pixel(-1,0))
+        return UP;
+
+    if(tmp == pixel(-1, -1))
+        return LEFT_UP;
+
+    if(tmp == pixel(0,-1))
+        return LEFT;
+
+    if(tmp == pixel(1,-1))
+        return LEFT_DOWN;
+
+    if(tmp == pixel(1,0))
+        return DOWN;
+
+    if(tmp == pixel(1,1))
+        return RIGHT_DOWN;
+
+    if(tmp == pixel(0,1))
+        return RIGHT;
+
+    if(tmp == pixel(-1,1))
+        return RIGHT_UP;
+}
 
 int roadmap::find_moving_directions(const cv::Mat & map, std::vector<direction> & dir_list, const pixel p, cv::Vec3b color) const noexcept {
 
@@ -862,7 +957,7 @@ void roadmap::create_road(cv::Mat & map, const direction dir, const pixel p, con
 	}
 
 	if(n > 0 && c_p != p) {
-
+        const int road_number = roads.at<int>(c_p.row, c_p.col);
 		int new_intersection  = create_intersection(c_p); 
 		connect_to_road(new_intersection, road);
 		if(blue2.size() >  1 ) { 
@@ -894,10 +989,13 @@ void roadmap::create_road(cv::Mat & map, const direction dir, const pixel p, con
 
 		if(red.size()) {
 #if DEBUG_ROADMAP == 1
-			std::cout << "Not connected road" << std::endl; 
+            std::cout << "Not connected road" << std::endl;
+            std::cout << red.size() << std::endl;
+            map.at<cv::Vec3b>(c_p.row, c_p.col) = {255,255,0};
 #endif
-
-		}  
+//            for (direction dir : red)
+//                split_road(dir, new_intersection);
+        }
 
 	} else {
 
@@ -1461,4 +1559,280 @@ int roadmap::remove_duplicate_nodes(std::vector<pixel> & nodes) {
 
 	return count;
 
-}  
+}
+
+void roadmap::enterMap(const float x, const float y, float &tx, float &ty, cv::Mat& world, cv::Mat& map) {
+    float dx = 100, dy = 100;                   // Delta x,y in coords
+    float px, py, clsX, clsY;                   // Both pairs are tempoaty target coords
+    int index;
+    cv::Point tgtPxl, robPxl;
+
+    cv::waitKey(1);
+
+    cv::Vec3b black{0, 0, 0}; // Black color
+    bool wallHit = false;
+
+    for (int i = 0; i < graph.size(); i++) {
+        // Avoid end-nodes
+        if ( graph[i].road_numbers.size() <= 1 ) {
+            continue;
+        }
+
+        // Check for  collision with walls
+        wallHit = false;
+        tgtPxl.x = graph[i].point.col, tgtPxl.y = graph[i].point.row;
+        robPxl.x = int( x / resizeFactor ) + int(roadMap.cols / 2);
+        robPxl.y = -int( y / resizeFactor ) + int(roadMap.rows / 2);
+
+        cv::LineIterator it(world, robPxl, tgtPxl);
+        for (int j = 0; j < it.count; j++, ++it) {
+            if ( world.at<cv::Vec3b>(it.pos()) == black ){
+                wallHit = true;
+                break;
+            }
+        }
+        if (wallHit) {
+            continue;
+        }
+
+        // Target intersection is approved
+        px = ( float(tgtPxl.x) - float(roadMap.cols) / 2 ) * resizeFactor;
+        py = -( float(tgtPxl.y) - float(roadMap.rows) / 2 ) * resizeFactor;
+
+        if ( sqrt((px-x)*(px-x) + (py-y)*(py-y)) < sqrt((dx*dx)+(dy*dy)) ) {
+            dx = abs(x - px); dy = abs(y - py);
+            clsX = px; clsY = py;
+            index = i;
+        }
+    }
+    map.at<cv::Vec3b>(graph[index].point.row, graph[index].point.col) = cv::Vec3b{255,0,255};
+
+    tx = clsX; ty = clsY;
+}
+
+int roadmap::enterPath(const float rX, const float rY, cv::Mat &world) {
+    int dx = 100, dy = 100;
+    cv::Point tPxl, rPxl;
+    int nodeIndex;
+
+    cv::Vec3b black{0, 0, 0};
+    bool wallHit = false;
+
+    for (int i = 0; i < graph.size(); i++) {
+        /// Avoid end-nodes
+        if ( graph[i].road_numbers.size() <= 1 ) {
+            continue;
+        }
+
+        /// Check for collision with walls
+        wallHit = false;
+        tPxl.x = graph[i].point.col; tPxl.y = graph[i].point.row;
+        rPxl.x = int( rX / resizeFactor ) + int(roadMap.cols / 2);
+        rPxl.y = -int( rY / resizeFactor ) + int(roadMap.rows / 2);
+
+        cv::LineIterator it(world, rPxl, tPxl);
+        for (int j = 0; j < it.count; j++, ++it) {
+            if ( world.at<cv::Vec3b>(it.pos()) == black ) {
+                wallHit = true;
+                break;
+            }
+        }
+        if ( wallHit ) {
+            continue;
+        }
+
+        /// Target node is valid, check if closest yet (manhattan distance |x1-x2|+|y1-y2|)
+        if ( (abs(tPxl.x - rPxl.x) + abs(tPxl.y - rPxl.y) ) < ( dx + dy ) ) {
+            dx = abs(tPxl.x - rPxl.x);
+            dy = abs(tPxl.y - rPxl.y);
+            nodeIndex = i;
+        }
+    }
+    return nodeIndex;
+}
+
+
+void roadmap::planPath(const float rX, const float rY, const float goalX, const float goalY, cv::Mat& world, cv::Mat& map) {
+
+    path.clear();
+    pathCreated = false;
+    goalCoords = std::tie(goalX, goalY);
+
+    int startNode = enterPath(rX, rY, world);
+    int endNode = enterPath(goalX, goalY, world);
+    std::cout << "Robot at pixel (red) (" << int( rX / resizeFactor ) + int(roadMap.cols / 2) << " , " << -int( rY / resizeFactor ) + int(roadMap.rows / 2) << ")\n";
+    std::cout << "Goal at pixel (red)(" << int( goalX / resizeFactor ) + int(roadMap.cols / 2) << " , " << -int( goalY / resizeFactor ) + int(roadMap.rows / 2) << ")\n";
+//
+//    std::cout << "startNode (yellow) at (" << graph[startNode].point.col << " , " << graph[startNode].point.row << "), index " << startNode << "\n";
+//    std::cout << "endNode (yellow) at (" << graph[endNode].point.col << " , " << graph[endNode].point.row << "), index " << endNode << "\n";
+
+    /// Based on Dijkstra's Weighted Shortest Path
+    std::vector<int> nodeDist;
+    std::vector<bool> nodeKnown;
+    std::vector<int> previousNode;
+
+    for ( int i = 0; i < graph.size(); i++ ) {
+        nodeDist.push_back(std::numeric_limits<int>::max()); // Set distance to "infinity"
+        nodeKnown.push_back(false);
+        previousNode.push_back(-1);
+    }
+
+    nodeDist[startNode] = 0;
+
+    std::cout << "\n";
+
+   // std::cout << "Node\tKnown\tDist\tPrev\n";
+    while( true ) {
+
+        /// Find unknown node with smallest distance
+        int crntNode = -1, smallDist = std::numeric_limits<int>::max();
+        for (int i = 0; i < graph.size(); i++) {
+            if (nodeKnown[i] == false) {
+                if (nodeDist[i] < smallDist) {
+                    smallDist = nodeDist[i];
+                    crntNode = i;
+                }
+            }
+        }
+//        std::cout << "crntNode: " << crntNode << " at (" << graph[crntNode].point.col << " , " << graph[crntNode].point.row << ")\n";
+        /// If crntNode == -1 then there are no more nodes
+        if (crntNode == -1) {
+            break;
+        }
+
+        map.at<cv::Vec3b>(graph[crntNode].point.row, graph[crntNode].point.col) = {255,128,128};
+
+        nodeKnown[crntNode] = true;
+
+//        std::cout << "graph[crntNode].road_numbers.size(): " << graph[crntNode].road_numbers.size() << "\n";
+        /// For each node adjacent to crntNode
+        for (int i = 0; i < graph[crntNode].road_numbers.size(); i++) {
+
+            int thisRoad = graph[crntNode].road_numbers[i];
+            int adjNode = -1;
+            /// Avoid invalid roads
+            if (roadsGraph[thisRoad].pt1 == -1 || roadsGraph[thisRoad].pt2 == -1) {
+                std::cout << "invalid adjNode\n";
+                continue;
+            } else if (roadsGraph[thisRoad].pt1 == crntNode) {
+                adjNode = roadsGraph[thisRoad].pt2;
+                //std::cout << "pt2: adjNode " << adjNode << " found\n";
+            } else {
+                adjNode = roadsGraph[thisRoad].pt1;
+                //std::cout << "pt1: adjNode " << adjNode << " found\n";
+            }
+
+            /// If the neighbor is unknown and the distance is bigger than the current + road:
+            if ( nodeKnown[adjNode] == false ) {
+                if (nodeDist[crntNode] + roadsGraph[thisRoad].length < nodeDist[adjNode]) {
+
+                    nodeDist[adjNode] = nodeDist[crntNode] + roadsGraph[thisRoad].length;
+                    previousNode[adjNode] = crntNode;
+//                    std::cout << "crntNode " << crntNode << " added adjNode " << adjNode << " at (" << graph[adjNode].point.col << " , " << graph[adjNode].point.row << ")\n";
+                }
+            }
+        }
+//        std::cout << ".\n";
+
+    //std::cout << crntNode << "\t\t" << nodeKnown[crntNode] << "\t\t" << nodeDist[crntNode] << "\t\t" << previousNode[crntNode] << "\t\t(" << graph[crntNode].point.col << " , " << graph[crntNode].point.row << ")\n";
+    }
+
+
+    map.at<cv::Vec3b>(-int( rY / resizeFactor ) + int(roadMap.rows / 2), int( rX / resizeFactor ) + int(roadMap.cols / 2)) = {0,0,255};
+    map.at<cv::Vec3b>(-int( goalY / resizeFactor ) + int(roadMap.rows / 2), int( goalX / resizeFactor ) + int(roadMap.cols / 2)) = {0,0,255};
+    map.at<cv::Vec3b>(graph[startNode].point.row, graph[startNode].point.col) = {0,255,255};
+    map.at<cv::Vec3b>(graph[endNode].point.row, graph[endNode].point.col) = {0,255,255};
+
+    /// Assemble path from startNode to endNode:
+    int nextNode = endNode;
+
+    while(true){
+        path.push_back(nextNode);
+
+        if (previousNode[nextNode] == -1) {
+            break;
+        }
+        else {
+            nextNode = previousNode[nextNode];
+        }
+    }
+
+    std::reverse(path.begin(), path.end() );
+    pathCreated = true;
+    std::cout << "Path size: " << path.size() << std::endl;
+
+    for (int i = 0; i < path.size(); i++) {
+        std::cout << i << "\t(" << graph[path[i]].point.col << " , " << graph[path[i]].point.row << ")\n";
+    }
+}
+
+void roadmap::navigate(int& pathProg, float &tgtX, float &tgtY, bool& goalReached, cv::Mat map) {
+     if (pathCreated) {
+        if (pathProg > -2 && pathProg < u_char(path.size() - 1)) {
+            if (pathProg != -1) {
+                map.at<cv::Vec3b>(graph[path[pathProg]].point.row, graph[path[pathProg]].point.col) = {0, 128, 255};
+            }
+
+            int nextNode = path[pathProg + 1];
+            pathProg += 1;
+            goalReached = false;
+            tgtX = (float(graph[nextNode].point.col) - float(roadMap.cols) / 2) * resizeFactor;
+            tgtY = -(float(graph[nextNode].point.row) - float(roadMap.rows) / 2) * resizeFactor;
+
+            map.at<cv::Vec3b>(graph[nextNode].point.row, graph[nextNode].point.col) = {0, 0, 255};
+
+        }
+        else if (pathProg == u_char(path.size() - 1)) {
+            map.at<cv::Vec3b>(graph[path[pathProg]].point.row, graph[path[pathProg]].point.col) = {0, 128, 255};
+
+            tgtX = std::get<0>(goalCoords);
+            tgtY = std::get<1>(goalCoords);
+            pathProg += 1;
+        }
+        else if (pathProg > u_char(path.size() - 1)) {
+            goalReached = true;
+            std::cout << "Goal reached!" << std::endl;
+            tgtX = std::numeric_limits<float>::max();
+            tgtY = std::numeric_limits<float>::max();
+            map.at<cv::Vec3b>(graph[path[pathProg+1]].point.row, graph[path[pathProg+1]].point.col) = {0, 128, 255};
+
+        }
+        else {
+            pathProg = -2;
+            tgtX = std::numeric_limits<float>::max();
+            tgtY = std::numeric_limits<float>::max();
+        }
+     }
+     else {
+         pathProg = -2;
+         tgtX = std::numeric_limits<float>::max();
+         tgtY = std::numeric_limits<float>::max();
+     }
+}
+
+void roadmap::draw_world_overlay(cv::Mat &roadmap, cv::Mat &world) {
+    cv::Vec3b white{255,255,255};
+    for (int i = 0; i < roadmap.rows; i++) {
+        for (int j = 0; j < roadmap.cols; j++) {
+            if (roadmap.at<cv::Vec3b>(i,j) == white && world.at<cv::Vec3b>(i,j) != white) {
+                roadmap.at<cv::Vec3b>(i,j) = cv::Vec3b{0, 0, 0};
+            }
+        }
+    }
+}
+
+void roadmap::drawPath(cv::Mat map) {
+    if (pathCreated){
+        int x, y;
+        for ( int i = 0; i < path.size(); i++ ) {
+            x = graph[path[i]].point.col;
+            y = graph[path[i]].point.row;
+            map.at<cv::Vec3b>(y, x) = {255, 0, 255};
+        }
+    }
+}
+
+
+
+
+

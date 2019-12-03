@@ -17,12 +17,14 @@ class FuzzyControl
 public:
     FuzzyControl();
     void lidarCallback(ConstLaserScanStampedPtr & msg);
-    void move(float & speed, float & dir);
+    bool move(float & speed, float & dir);
     void setGoal(const float x, const float y);
 
     bool collect(float & speed, float & dir);
     std::tuple<float, float> globMarble(const float mDir, const float mDist);
     void setMarble(float x, float y);
+
+    std::tuple<float, float, float> getCoords();
 
     void drawRobotActualPath(float x, float y); /// Public because Dan might need it
     void saveRobotPathToFile(); /// Public because Dan might need it
@@ -31,7 +33,7 @@ public:
     void poseCallbackNew(ConstPosesStampedPtr &_msg); // temp cheat method
 #endif
 
-    float calculateGoalDir(char c);
+    std::tuple<float, float> calculateGoalDir(char c);
 
     ~FuzzyControl();
 private:
@@ -41,6 +43,7 @@ private:
     fl::InputVariable * obsDir;
     fl::InputVariable * obsDist;
     fl::InputVariable * goal;
+    fl::InputVariable * goalDistance;
     fl::OutputVariable * steer;
     fl::OutputVariable * speed;
     std::tuple<float, float, float> currentCoordinates;

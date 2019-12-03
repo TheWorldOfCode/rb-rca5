@@ -95,10 +95,6 @@ void Vision::cameraCallbackHough(ConstImageStampedPtr &msg)
     cv::imshow("Camera with Hough circle transform", im);// temp name
     mutexCamera.unlock();
 
-    // from measurement:
-    // Camera spread:   ~ 0.5 rad, +-0.25 rad
-    //        distance: ~ 2
-    //        image x:  ~ 1
 
     if ( marbleFound == true )
         {
@@ -122,7 +118,7 @@ std::tuple<float, float> Vision::calculateMarblePos(cv::Point center, int radius
 
     // Calculate (estimate) marble distance
     // Assumptions: Triangle between edges of marble and is perpendicular no matter position
-    //              Distance "to screen" is 2 no matter the angle
+    //              Distance "to screen" is 1 no matter the angle
 
     // Hough Circles outputs a radius,
     float normDiameter = (float(radius)*2) / float(cameraWidth);

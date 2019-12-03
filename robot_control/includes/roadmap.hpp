@@ -26,7 +26,15 @@ class roadmap {
 		void optimize_GVD(); 
 		void draw_roadmap(cv::Mat & dst) const noexcept; 
 		int gradient2(const cv::Mat & brushfire, const cv::Mat & src, const int row, const int col); 
-		void gradient(const cv::Mat & src, cv::Mat & angleDst, cv::Mat & magDst, std::vector<std::tuple<float, cv::Vec3b>> & angle, std::vector< std::tuple<float,cv::Vec3b>> & mag); 
+		void gradient(const cv::Mat & src, cv::Mat & angleDst, cv::Mat & magDst, std::vector<std::tuple<float, cv::Vec3b>> & angle, std::vector< std::tuple<float,cv::Vec3b>> & mag);
+
+    //######### For robot implementation ############
+        void enterMap(const float x, const float y, float& tx, float& ty, cv::Mat& world, cv::Mat& map);    // Finds the nearest intersection to the robot and sets that as a goal
+        int enterPath(const float rX, const float rY, cv::Mat& world);                  // Finds the nearest intersection to the robot and returns index of intersection
+		void planPath(const float rX, const float rY, const float goalX, const float goalY, cv::Mat& world, cv::Mat& map);
+		void navigate(int& pathProg, float& tgtX, float& tgtY, bool& goalReached, cv::Mat map);
+        void drawPath(cv::Mat map);
+		void draw_world_overlay(cv::Mat& roadmap, cv::Mat& world);
 		~roadmap(); 
 
 	private: 
@@ -45,10 +53,11 @@ class roadmap {
 
 		struct road {
 
-			int pt1 = -1;
-			int pt2 = -1;
+			int pt1 = -1; // Intersection 1
+			int pt2 = -1; // Intersection 2
 			const direction dir; 
 			const int index;
+			float length;
 
 			road(int pt1, int pt2, const direction dir, const int i) noexcept : pt1(pt1), pt2(pt2), dir(dir), index(i)  {}  
 			road(const direction dir, const int i) noexcept : dir(dir), index(i)  {}  
@@ -60,25 +69,35 @@ class roadmap {
 			bool operator!=(const road r ) const {
 				return (pt1 == r.pt1 || pt1 == r.pt2) && (pt2 == r.pt1 || pt2 == r.pt2) ? false : true; 
 			}
-			void connect(int p) {
+			void connect(int p, float distance) {
 				if(pt1 == -1)
 					pt1 = p;	
 				else if (pt2 == -1) 
-					pt2 = p;
+					{
+				    pt2 = p;
+				    length = distance;
+					}
 
 				else 
 					throw FullConnectedRoad();  
 
 
-			}  
+			}
+
+            void change(const int intersection_number_old, const int intersection_number_new){
+			    if (intersection_number_old == pt1) {
+			        pt1 = intersection_number_new;
+			    } else if ( intersection_number_old == pt2) {
+			        pt2 = intersection_number_new;
+			    }
+
+			}
 
 			void remove_road() {
 			
 				pt1 = -1;
 				pt2 = -1;
-			}  
-
-
+			}
 		};
 
 
@@ -87,7 +106,7 @@ class roadmap {
 			const pixel point;
 			const int index;
 
-			std::vector<int> road_numbers;
+			std::vector<int> road_numbers;  // Roads in the intersection. The numbers match the indecies of the roadsGraph vector.
 
 			intersection(const pixel p, const int i) noexcept : point(p), index(i)  {}   
 			void add_road(const int road_number) { 
@@ -120,7 +139,7 @@ class roadmap {
 		cv::Mat roadMap;
 		cv::Mat roads; 
 
-		std::vector<intersection>  graph;
+		std::vector<intersection> graph;
 		std::vector<road> roadsGraph;
 
 		void gerenate_GVD1(const cv::Mat & brushfire, std::vector<pixel> & nodes, const int max_value );
@@ -128,14 +147,14 @@ class roadmap {
 		void gerenate_GVD2(const cv::Mat & brushfire, const cv::Mat & contourImage, std::vector<pixel> & nodes); 
 		void gerenate_GVD3(std::vector<pixel> & nodes); 
 
-		void mark_road(const pixel p); 
+		void mark_road(const pixel p);
+		void change_road(const int road_number, const int road_number_new, const direction dir, const pixel p, const pixel c_p); ////////////////////////////////////////////////////// Follow given
 		int new_road(const int start, const direction dir); 
 		void connect_to_road(const int intersection_number, const int road_number);
-		void split_road(const int road_number, const int new_road); 
+		void split_road(const direction dir, const int intersection_number);
 		void add_road(const int intersection_number1, const int intersection_number2, const int road_number); 
 		void delete_road(const int road_number); 
 		void remove_duplicate_road(const int intersection_number, const int road_number); 
-
 
 		int create_intersection(const pixel point); 
 		void connect_to_intersection(const int new_intersection, const direction dir, const pixel p, bool use_dir = true); 
@@ -146,6 +165,7 @@ class roadmap {
 
 		bool detect_indre_cornor(const cv::Mat & map, const int row, const int col, const cv::Vec3b mapColor); 
 
+		direction find_direction(const pixel from, const pixel to);///////////////////////////////////////
 		int find_moving_directions(const cv::Mat & map, std::vector<direction> & dir_list, const pixel p, const cv::Vec3b color) const noexcept;
 		int reduce_directions(std::vector<direction> & dir_list, const direction dir) const noexcept;
 		void create_road(cv::Mat & map, const direction dir, const pixel p, const pixel c_p, std::vector<pixel> & nodes, const int road) noexcept; 
@@ -168,11 +188,16 @@ class roadmap {
 
 		friend road;
 
-
-
 		bool move(std::vector<cv::Point> & n1, const cv::Mat & brushfire, cv::Mat & map, cv::Point start, cv::Point end); 
 		void move_draw(const std::vector<cv::Point> & n1, std::vector<pixel> & n2, cv::Mat & map); 
 
+		int remove_duplicate_nodes(std::vector<pixel> & nodes);
 
-		int remove_duplicate_nodes(std::vector<pixel> & nodes); 
+    //######### For robot implementation ############
+        const float resizeFactor = 1/1.41735;
+
+        std::vector<int> path;
+        std::tuple<float, float> goalCoords;
+        bool pathCreated = false;
+
 }; 
