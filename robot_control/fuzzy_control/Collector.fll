@@ -1,16 +1,15 @@
-#File: ObstacleAvoidance.fll
+#File: Collector.fll
 #
-Engine: ObstacleAvoidance.fll
+Engine: Collector.fll
 InputVariable: obsDir
   enabled: true
   range: -1.963 1.963
   lock-range: false
-  #term: left Triangle -0.393 0.785 1.963
-  #term: forward Triangle -0.393 0.000 0.393
-  #term: right Triangle -1.963 -0.785 0.393
   term: left Triangle -0.293 0.785 1.571 #-0.293 0.785 1.963
   term: forward Triangle -0.293 0.000 0.293
   term: right Triangle -1.571 -0.785 0.293 #-1.963 -0.785 0.293
+  term: behindR Ramp -1.570 -1.963
+  term: behindL Rectangle 1.570 1.963
 
 InputVariable: obsDist
   enabled: true
@@ -59,10 +58,6 @@ OutputVariable: speed
   default: nan
   lock-previous: false
   term: stop Rectangle -1.000 0.000
-  #term: slow Triangle 0.050 0.400 0.600
-  #term: medium Triangle 0.400 0.600 0.800
-  #term: fast Ramp 0.600 0.800
-
   term: slow Triangle 0.050 0.600 0.700
   term: medium Triangle 0.600 0.800 1.000
   term: fast Ramp 1.000 3.000
@@ -92,3 +87,6 @@ RuleBlock: mamdani
   rule: if goalDist is notClose and obsDist is far and goalDir is left then steer is left and speed is fast
   rule: if goalDist is notClose and obsDist is far and goalDir is forward then steer is forward and speed is fast
   rule: if goalDist is notClose and obsDist is far and goalDir is right then steer is right and speed is fast
+
+  rule: if goalDist is notClose and obsDir is behindR then steer is forward and speed is fast
+  rule: if goalDist is notClose and obsDir is behindL then steer is forward and speed is fast

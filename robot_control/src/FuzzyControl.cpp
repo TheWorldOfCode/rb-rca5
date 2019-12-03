@@ -20,28 +20,27 @@ using namespace fl;
 FuzzyControl::FuzzyControl()
 {
     flag = false;
+    //################## Goal Engine ##################################
 
-    //################## Roaming Engine ##################################
-
-    roamEngine = FllImporter().fromFile(
-            "../fuzzy_control/ObstacleAvoidance.fll");// bemærk et niveau op, kunne også have flyttet .fll
+    goalEngine = FllImporter().fromFile(
+            "../fuzzy_control/GoalAndObstacleAvoidance.fll");// bemærk et niveau op, kunne også have flyttet .fll
 
     std::string status;
-    if (not roamEngine->isReady(&status))
-        throw Exception("[roamEngine error] roamEngine is not ready:n" + status, FL_AT);
+    if (not goalEngine->isReady(&status))
+        throw Exception("[goalEngine error] goalEngine is not ready:n" + status, FL_AT);
 
-    obsDir = roamEngine->getInputVariable("obsDir");
-    obsDist = roamEngine->getInputVariable("obsDist");
-    goal = roamEngine->getInputVariable("goal");
-    goalDistance = roamEngine->getInputVariable("goalDist");
+    obsDir = goalEngine->getInputVariable("obsDir");
+    obsDist = goalEngine->getInputVariable("obsDist");
+    goal = goalEngine->getInputVariable("goal");
+    goalDistance = goalEngine->getInputVariable("goalDist");
 
-    steer = roamEngine->getOutputVariable("steer");
-    speed = roamEngine->getOutputVariable("speed");
+    steer = goalEngine->getOutputVariable("steer");
+    speed = goalEngine->getOutputVariable("speed");
 
 
     //################## Collecting Engine #############################
     collectorEngine = FllImporter().fromFile(
-            "../fuzzy_control/playground.fll");
+            "../fuzzy_control/Collector.fll");
 
     std::string status2;
     if (not collectorEngine->isReady(&status))
@@ -55,6 +54,24 @@ FuzzyControl::FuzzyControl()
 
     collectSteer = collectorEngine->getOutputVariable("steer");
     collectSpeed = collectorEngine->getOutputVariable("speed");
+
+    //################## Freeroam Engine ##################################
+
+    freeroamEngine = FllImporter().fromFile(
+            "../fuzzy_control/ObstacleAvoidance.fll");// bemærk et niveau op, kunne også have flyttet .fll
+
+    std::string status3;
+    if (not freeroamEngine->isReady(&status3))
+        throw Exception("[freeroamEngine error] freeroamEngine is not ready:n" + status3, FL_AT);
+
+    obsDirRoam = freeroamEngine->getInputVariable("obsDir");
+    obsDistRoam = freeroamEngine->getInputVariable("obsDist");
+
+    roamSteer = freeroamEngine->getOutputVariable("steer");
+    roamSpeed = freeroamEngine->getOutputVariable("speed");
+
+
+    //################# Draw map of path #################################
 
     map = cv::imread("../map/smallworld_floor_plan.png");// Load smallworld map, for use in drawing the robots path
     cv::resize(map, mapCopy, cv::Size(resizedWidth, resizedHeight), 0,0,cv::INTER_NEAREST);
@@ -94,8 +111,44 @@ void FuzzyControl::lidarCallback(ConstLaserScanStampedPtr & msg) {
 
         }
     flag=false;
+}
+
+#if ENABLE_GLOBAL_POS == 1
+void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
+{
+    float x, y, qw, qx, qy, qz;
+
+    mutexFuzzy.lock();
+    for (int i = 0; i < msg->pose_size(); i++) {
+        if (msg->pose(i).name() == "pioneer2dx") {
+            x = msg->pose(i).position().x();
+            y = msg->pose(i).position().y();
+
+            // Quaternions
+            qw = msg->pose(i).orientation().w();
+            qx = msg->pose(i).orientation().x();
+            qy = msg->pose(i).orientation().y();
+            qz = msg->pose(i).orientation().z(); // seen from x direction a left rotation is positive, and a right is negative TROR JEG
+
+        }
+
+
+    }
+
+    double siny_cosp = +2.0 *(qw *qz + qx * qy);
+    double cosy_cosp = 1.0 - 2.0 * (qy*qy+qz*qz);
+    float rz= atan2(siny_cosp,cosy_cosp);
+    currentCoordinates = std::tie(x, y, rz);
+
+//    std::cout << std::setprecision(2) << std::fixed << std::setw(6)
+//              << "current x: " << x << std::setw(6)
+//              << " current y: " << y << std::setw(6)
+//              << " orientation: " << rz << std::setw(6)<< std::endl; // seen from x direction a left rotation is positive, and a right is negative
+
+    mutexFuzzy.unlock();
 
 }
+#endif
 
 bool FuzzyControl::move(float &speed2, float &dir) {
 
@@ -129,6 +182,7 @@ bool FuzzyControl::move(float &speed2, float &dir) {
             }
         }
 
+
     obsDir->setValue(std::get<0>(lidar_data[index]));
     obsDist->setValue(std::get<1>(lidar_data[index]));
 #if FREE_ROAM == 0
@@ -147,7 +201,7 @@ bool FuzzyControl::move(float &speed2, float &dir) {
 
     lidar_data.clear();
 
-    roamEngine->process();
+    goalEngine->process();
     float dirTmp = steer->getValue();
     float speedTmp = speed->getValue();
 
@@ -205,11 +259,6 @@ bool FuzzyControl::collect(float & speed2, float & dir)
         dir = dirTmp;
         speed2 = speedTmp;
     }
-//    std::cout << "Input:" "obsDir: " << std::get<0>(lidar_data[index])
-//              << "\t obsDist: " << std::get<1>(lidar_data[index])
-//              << "\t marbleDir: " << goalDir
-//              << "\t marbleDist: " << std::get<2>(marbleCoordinates) << "\n";
-//    std::cout << "Output: speed: " << speed2 << "\t dir: " << dir << std::endl << std::endl;
 
     bool marbleCollected = false;
     float robX = std::get<0>(currentCoordinates);
@@ -222,6 +271,41 @@ bool FuzzyControl::collect(float & speed2, float & dir)
     }
     return marbleCollected;
 
+}
+
+void FuzzyControl::freeRoam(float &speed2, float &dir) {
+
+    flag=true;
+    while(flag);
+
+    float closest = 10;
+    int index = -1;
+
+    for(int i = 0; i < lidar_data.size() ;i++)// finds closest range from lidar scanner
+    {
+        if (closest > std::get<1>(lidar_data[i]))
+        {
+            closest = std::get<1>(lidar_data[i]);
+            index = i;
+        }
+    }
+
+    obsDirRoam->setValue(std::get<0>(lidar_data[index]));
+    obsDistRoam->setValue(std::get<1>(lidar_data[index]));
+
+    lidar_data.clear();
+
+    freeroamEngine->process();
+
+    float dirTmp = roamSteer->getValue();
+    float speedTmp = roamSpeed->getValue();
+    std::cout << speedTmp << "\t" << dirTmp << std::endl;
+
+    if (!isnan(dirTmp) && !isnan(speedTmp))
+    {
+        dir = dirTmp;
+        speed2 = speedTmp;
+    }
 }
 
 std::tuple<float, float> FuzzyControl::globMarble(const float mDir, const float mDist)
@@ -273,43 +357,6 @@ void FuzzyControl::setGoal(float x, float y)
     cv::circle(mapCopy, endPos, 20,  cv::Scalar(0, 0, 255), -1,8, 0);
 }
 
-#if ENABLE_GLOBAL_POS == 1
-void FuzzyControl::poseCallbackNew(ConstPosesStampedPtr & msg)
-{
-    float x, y, qw, qx, qy, qz;
-
-    mutexFuzzy.lock();
-    for (int i = 0; i < msg->pose_size(); i++) {
-        if (msg->pose(i).name() == "pioneer2dx") {
-            x = msg->pose(i).position().x();
-            y = msg->pose(i).position().y();
-
-            // Quaternions
-            qw = msg->pose(i).orientation().w();
-            qx = msg->pose(i).orientation().x();
-            qy = msg->pose(i).orientation().y();
-            qz = msg->pose(i).orientation().z(); // seen from x direction a left rotation is positive, and a right is negative TROR JEG
-
-            }
-
-
-        }
-
-    double siny_cosp = +2.0 *(qw *qz + qx * qy);
-    double cosy_cosp = 1.0 - 2.0 * (qy*qy+qz*qz);
-    float rz= atan2(siny_cosp,cosy_cosp);
-    currentCoordinates = std::tie(x, y, rz);
-
-//    std::cout << std::setprecision(2) << std::fixed << std::setw(6)
-//              << "current x: " << x << std::setw(6)
-//              << " current y: " << y << std::setw(6)
-//              << " orientation: " << rz << std::setw(6)<< std::endl; // seen from x direction a left rotation is positive, and a right is negative
-
-    mutexFuzzy.unlock();
-
-}
-#endif
-
 std::tuple<float, float> FuzzyControl::calculateGoalDir(char c)
 {
     /// method using atan2:
@@ -347,6 +394,14 @@ std::tuple<float, float> FuzzyControl::calculateGoalDir(char c)
     return std::tie(goalDir, goalDist);
 }
 
+std::tuple<float, float, float> FuzzyControl::getCoords() {
+    return std::tuple<float, float, float>(
+            std::get<0>(currentCoordinates),
+            std::get<1>(currentCoordinates),
+            std::get<2>(currentCoordinates));
+}
+
+
 void FuzzyControl::drawRobotActualPath(float x, float y)
 {
 
@@ -368,12 +423,6 @@ FuzzyControl::~FuzzyControl() {
 
 }
 
-std::tuple<float, float, float> FuzzyControl::getCoords() {
-    return std::tuple<float, float, float>(
-            std::get<0>(currentCoordinates),
-            std::get<1>(currentCoordinates),
-            std::get<2>(currentCoordinates));
-}
 
 
 

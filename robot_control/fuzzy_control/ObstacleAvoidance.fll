@@ -1,16 +1,14 @@
-#File: ObstacleAvoidance.fll
-#
-Engine: ObstacleAvoidance.fll
+#File: ObstacleAvoidancee.fll
+Engine: ObstacleAvoidance
 InputVariable: obsDir
   enabled: true
-  range: -1.963 1.963
+  range: -3.142 3.142
   lock-range: false
-  #term: left Triangle -0.393 0.785 1.963
-  #term: forward Triangle -0.393 0.000 0.393
-  #term: right Triangle -1.963 -0.785 0.393
   term: left Triangle -0.293 0.785 1.963
   term: forward Triangle -0.293 0.000 0.293
   term: right Triangle -1.963 -0.785 0.293
+  term: behindR Ramp -1.570 -1.963
+  term: behindL Rectangle 1.570 1.963
 
 InputVariable: obsDist
   enabled: true
@@ -21,34 +19,19 @@ InputVariable: obsDist
   term: medium Triangle 0.750 1.500 2.250
   term: far Ramp 1.500 2.250
 
-InputVariable: goal
-  enabled: true
-  range: -3.142 3.142
-  lock-range: false
-  term: left Triangle -0.500 1.571 3.142
-  term: forward Triangle -0.500 0.000 0.500
-  term: right Triangle -3.142 -1.571 0.500
-
-  InputVariable: goalDist
-    enabled: true
-    range: 0.000 50.000
-    lock-range: false
-    term: close Trapezoid 0.000 0.010 2.500 2.520
-    term: notClose Trapezoid 2.500 2.520 50.000 50.100
-
 OutputVariable: steer
   enabled: true
-  range: -2.000 2.000
+  range: -1.000 1.000
   lock-range: false
   aggregation: Maximum
   defuzzifier: Centroid 100
   default: nan
   lock-previous: false
-  term: hardRight Ramp 1.000 2.000
+  term: hardRight Ramp 0.500 1.000
   term: right Triangle 0.000 0.750 1.000
   term: forward Triangle -0.010 0.000 0.010
   term: left Triangle -1.000 -0.750 0.000
-  term: hardLeft Ramp -1.000 -2.000
+  term: hardLeft Ramp -0.500 -1.000
 
 OutputVariable: speed
   enabled: true
@@ -59,10 +42,6 @@ OutputVariable: speed
   default: nan
   lock-previous: false
   term: stop Rectangle -1.000 0.000
-  #term: slow Triangle 0.050 0.400 0.600
-  #term: medium Triangle 0.400 0.600 0.800
-  #term: fast Ramp 0.600 0.800
-  term: verySlow Rectangle -0.100 0.100
   term: slow Triangle 0.050 0.600 0.700
   term: medium Triangle 0.600 0.800 1.000
   term: fast Ramp 1.000 3.000
@@ -81,18 +60,13 @@ RuleBlock: mamdani
   rule: if obsDir is forward and obsDist is close then steer is right and speed is slow
   rule: if obsDir is right and obsDist is close then steer is hardLeft and speed is slow
 
-  rule: if obsDist is medium and goal is left and goalDist is notClose then steer is left and speed is medium
-  rule: if obsDist is medium and goal is forward and goalDist is notClose then steer is forward and speed is medium
-  rule: if obsDist is medium and goal is right and goalDist is notClose then steer is right and speed is medium
+  rule: if obsDir is left and obsDist is medium then steer is forward and speed is medium
+  rule: if obsDir is forward and obsDist is medium then steer is forward and speed is medium
+  rule: if obsDir is right and obsDist is medium then steer is forward and speed is medium
 
-  rule: if obsDist is far and goal is left and goalDist is notClose then steer is hardLeft and speed is fast
-  rule: if obsDist is far and goal is forward and goalDist is notClose then steer is forward and speed is fast
-  rule: if obsDist is far and goal is right and goalDist is notClose then steer is hardRight and speed is fast
+  rule: if obsDir is left and obsDist is far then steer is forward and speed is fast
+  rule: if obsDir is forward and obsDist is far then steer is forward and speed is fast
+  rule: if obsDir is right and obsDist is far then steer is forward and speed is fast
 
-  rule: if obsDist is medium and goal is left and goalDist is close then steer is hardLeft and speed is verySlow
-  rule: if obsDist is medium and goal is forward and goalDist is close then steer is forward and speed is medium
-  rule: if obsDist is medium and goal is right and goalDist is close then steer is hardRight and speed is verySlow
-
-  rule: if obsDist is far and goal is left and goalDist is close then steer is hardLeft and speed is verySlow
-  rule: if obsDist is far and goal is forward and goalDist is close then steer is forward and speed is medium
-  rule: if obsDist is far and goal is right and goalDist is close then steer is hardRight and speed is verySlow
+  rule: if obsDir is behindR then steer is forward and speed is fast
+  rule: if obsDir is behindL then steer is forward and speed is fast

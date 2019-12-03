@@ -16,39 +16,43 @@ class FuzzyControl
 {
 public:
     FuzzyControl();
-    void lidarCallback(ConstLaserScanStampedPtr & msg);
-    bool move(float & speed, float & dir);
-    void setGoal(const float x, const float y);
 
+    void lidarCallback(ConstLaserScanStampedPtr & msg);
+#if ENABLE_GLOBAL_POS == 1
+    void poseCallbackNew(ConstPosesStampedPtr &_msg); // temp cheat method
+#endif
+
+    bool move(float & speed, float & dir);
     bool collect(float & speed, float & dir);
+    void freeRoam(float & speed, float & dir);
+
     std::tuple<float, float> globMarble(const float mDir, const float mDist);
     void setMarble(float x, float y);
-
+    void setGoal(const float x, const float y);
+    std::tuple<float, float> calculateGoalDir(char c);
     std::tuple<float, float, float> getCoords();
 
     void drawRobotActualPath(float x, float y); /// Public because Dan might need it
     void saveRobotPathToFile(); /// Public because Dan might need it
 
-#if ENABLE_GLOBAL_POS == 1
-    void poseCallbackNew(ConstPosesStampedPtr &_msg); // temp cheat method
-#endif
-
-    std::tuple<float, float> calculateGoalDir(char c);
-
     ~FuzzyControl();
+
 private:
     std::vector<std::tuple<float, float>> lidar_data;
     bool flag ;
-    fl::Engine * roamEngine;
+    fl::Engine * freeroamEngine;
+    fl::InputVariable * obsDirRoam;
+    fl::InputVariable * obsDistRoam;
+    fl::OutputVariable * roamSteer;
+    fl::OutputVariable * roamSpeed;
+
+    fl::Engine * goalEngine;
     fl::InputVariable * obsDir;
     fl::InputVariable * obsDist;
     fl::InputVariable * goal;
     fl::InputVariable * goalDistance;
     fl::OutputVariable * steer;
     fl::OutputVariable * speed;
-    std::tuple<float, float, float> currentCoordinates;
-    std::tuple< float, float> goalCoordinates;
-    boost::mutex  mutexFuzzy;
 
     fl::Engine * collectorEngine;
     fl::InputVariable * obsDirCol;
@@ -57,7 +61,11 @@ private:
     fl::InputVariable * marbleDist;
     fl::OutputVariable * collectSteer;
     fl::OutputVariable * collectSpeed;
+
+    std::tuple<float, float, float> currentCoordinates;
+    std::tuple< float, float> goalCoordinates;
     std::tuple<float, float, float> marbleCoordinates;
+    boost::mutex  mutexFuzzy;
 
     cv::Mat map;
     cv::Mat mapCopy;
