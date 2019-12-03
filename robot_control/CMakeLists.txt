@@ -16,6 +16,10 @@ include_directories(${GAZEBO_PROTO_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS})
 # Find the library fuzzylite
 find_library(FuzzyLib fuzzylite)
 
+SET(GCC_COVERAGE_COMPILE_FLAGS "-g")
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}") 
+  
 # Includes all headers in  ../includes
 include_directories(includes)
 
@@ -23,6 +27,6 @@ include_directories(includes)
 file(GLOB SOURCES src/*.cpp)
 
 
-add_executable(robot_control ${SOURCES} src/FuzzyControl.cpp includes/FuzzyControl.h src/Vision.cpp includes/Vision.h)
+add_executable(robot_control ${SOURCES} src/FuzzyControl.cpp includes/FuzzyControl.h src/Vision.cpp includes/Vision.h mains/mainRoadMapTest.cpp)
 
 target_link_libraries(robot_control ${OpenCV_LIBS} ${GAZEBO_PROTO_LIBRARIES} ${GAZEBO_LIBRARIES} ${FuzzyLib})
