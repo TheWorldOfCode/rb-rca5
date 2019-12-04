@@ -294,17 +294,19 @@ void FuzzyControl::freeRoam(float &speed2, float &dir) {
     obsDistRoam->setValue(std::get<1>(lidar_data[index]));
 
     lidar_data.clear();
-
     freeroamEngine->process();
 
     float dirTmp = roamSteer->getValue();
     float speedTmp = roamSpeed->getValue();
-    std::cout << speedTmp << "\t" << dirTmp << std::endl;
 
-    if (!isnan(dirTmp) && !isnan(speedTmp))
+    if (!isnan(speedTmp))
     {
-        dir = dirTmp;
         speed2 = speedTmp;
+    }
+    if (!isnan(dirTmp)) {
+        dir = dirTmp;
+    } else {
+        dir = 0;
     }
 }
 

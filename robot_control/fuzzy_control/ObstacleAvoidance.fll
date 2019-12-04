@@ -8,7 +8,7 @@ InputVariable: obsDir
   term: forward Triangle -0.293 0.000 0.293
   term: right Triangle -1.963 -0.785 0.293
   term: behindR Ramp -1.570 -1.963
-  term: behindL Rectangle 1.570 1.963
+  term: behindL Ramp 1.570 1.963
 
 InputVariable: obsDist
   enabled: true
@@ -29,7 +29,7 @@ OutputVariable: steer
   lock-previous: false
   term: hardRight Ramp 0.500 1.000
   term: right Triangle 0.000 0.750 1.000
-  term: forward Triangle -0.010 0.000 0.010
+  term: forward Triangle -0.100 0.000 0.100
   term: left Triangle -1.000 -0.750 0.000
   term: hardLeft Ramp -0.500 -1.000
 
