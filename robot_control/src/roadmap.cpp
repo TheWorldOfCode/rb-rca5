@@ -1652,7 +1652,7 @@ int roadmap::enterPath(const float rX, const float rY, cv::Mat &world) {
 }
 
 
-void roadmap::planPath(const float rX, const float rY, const float goalX, const float goalY, cv::Mat& world, cv::Mat& map) {
+int roadmap::planPath(const float rX, const float rY, const float goalX, const float goalY, cv::Mat& world, cv::Mat& map) {
 
     path.clear();
     pathCreated = false;
@@ -1660,11 +1660,6 @@ void roadmap::planPath(const float rX, const float rY, const float goalX, const 
 
     int startNode = enterPath(rX, rY, world);
     int endNode = enterPath(goalX, goalY, world);
-    std::cout << "Robot at pixel (red) (" << int( rX / resizeFactor ) + int(roadMap.cols / 2) << " , " << -int( rY / resizeFactor ) + int(roadMap.rows / 2) << ")\n";
-    std::cout << "Goal at pixel (red)(" << int( goalX / resizeFactor ) + int(roadMap.cols / 2) << " , " << -int( goalY / resizeFactor ) + int(roadMap.rows / 2) << ")\n";
-//
-//    std::cout << "startNode (yellow) at (" << graph[startNode].point.col << " , " << graph[startNode].point.row << "), index " << startNode << "\n";
-//    std::cout << "endNode (yellow) at (" << graph[endNode].point.col << " , " << graph[endNode].point.row << "), index " << endNode << "\n";
 
     /// Based on Dijkstra's Weighted Shortest Path
     std::vector<int> nodeDist;
@@ -1694,17 +1689,13 @@ void roadmap::planPath(const float rX, const float rY, const float goalX, const 
                 }
             }
         }
-//        std::cout << "crntNode: " << crntNode << " at (" << graph[crntNode].point.col << " , " << graph[crntNode].point.row << ")\n";
         /// If crntNode == -1 then there are no more nodes
         if (crntNode == -1) {
             break;
         }
-
         map.at<cv::Vec3b>(graph[crntNode].point.row, graph[crntNode].point.col) = {255,128,128};
-
         nodeKnown[crntNode] = true;
 
-//        std::cout << "graph[crntNode].road_numbers.size(): " << graph[crntNode].road_numbers.size() << "\n";
         /// For each node adjacent to crntNode
         for (int i = 0; i < graph[crntNode].road_numbers.size(); i++) {
 
@@ -1716,10 +1707,8 @@ void roadmap::planPath(const float rX, const float rY, const float goalX, const 
                 continue;
             } else if (roadsGraph[thisRoad].pt1 == crntNode) {
                 adjNode = roadsGraph[thisRoad].pt2;
-                //std::cout << "pt2: adjNode " << adjNode << " found\n";
             } else {
                 adjNode = roadsGraph[thisRoad].pt1;
-                //std::cout << "pt1: adjNode " << adjNode << " found\n";
             }
 
             /// If the neighbor is unknown and the distance is bigger than the current + road:
@@ -1728,20 +1717,16 @@ void roadmap::planPath(const float rX, const float rY, const float goalX, const 
 
                     nodeDist[adjNode] = nodeDist[crntNode] + roadsGraph[thisRoad].length;
                     previousNode[adjNode] = crntNode;
-//                    std::cout << "crntNode " << crntNode << " added adjNode " << adjNode << " at (" << graph[adjNode].point.col << " , " << graph[adjNode].point.row << ")\n";
                 }
             }
-        }
-//        std::cout << ".\n";
 
+        }
     //std::cout << crntNode << "\t\t" << nodeKnown[crntNode] << "\t\t" << nodeDist[crntNode] << "\t\t" << previousNode[crntNode] << "\t\t(" << graph[crntNode].point.col << " , " << graph[crntNode].point.row << ")\n";
     }
 
 
-    map.at<cv::Vec3b>(-int( rY / resizeFactor ) + int(roadMap.rows / 2), int( rX / resizeFactor ) + int(roadMap.cols / 2)) = {0,0,255};
-    map.at<cv::Vec3b>(-int( goalY / resizeFactor ) + int(roadMap.rows / 2), int( goalX / resizeFactor ) + int(roadMap.cols / 2)) = {0,0,255};
-    map.at<cv::Vec3b>(graph[startNode].point.row, graph[startNode].point.col) = {0,255,255};
-    map.at<cv::Vec3b>(graph[endNode].point.row, graph[endNode].point.col) = {0,255,255};
+    map.at<cv::Vec3b>(-int( rY / resizeFactor ) + int(roadMap.rows / 2), int( rX / resizeFactor ) + int(roadMap.cols / 2)) = {0,0,128};
+    map.at<cv::Vec3b>(-int( goalY / resizeFactor ) + int(roadMap.rows / 2), int( goalX / resizeFactor ) + int(roadMap.cols / 2)) = {0,128,0};
 
     /// Assemble path from startNode to endNode:
     int nextNode = endNode;
@@ -1759,11 +1744,8 @@ void roadmap::planPath(const float rX, const float rY, const float goalX, const 
 
     std::reverse(path.begin(), path.end() );
     pathCreated = true;
-    std::cout << "Path size: " << path.size() << std::endl;
 
-    for (int i = 0; i < path.size(); i++) {
-        std::cout << i << "\t(" << graph[path[i]].point.col << " , " << graph[path[i]].point.row << ")\n";
-    }
+    return path.size();
 }
 
 void roadmap::navigate(int& pathProg, float &tgtX, float &tgtY, bool& goalReached, cv::Mat map) {
@@ -1791,7 +1773,6 @@ void roadmap::navigate(int& pathProg, float &tgtX, float &tgtY, bool& goalReache
         }
         else if (pathProg > u_char(path.size() - 1)) {
             goalReached = true;
-            std::cout << "Goal reached!" << std::endl;
             tgtX = std::numeric_limits<float>::max();
             tgtY = std::numeric_limits<float>::max();
             map.at<cv::Vec3b>(graph[path[pathProg+1]].point.row, graph[path[pathProg+1]].point.col) = {0, 128, 255};

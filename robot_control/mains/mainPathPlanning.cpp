@@ -7,9 +7,13 @@
 #include <iostream>
 #include <vector>
 #include <tuple>
+#include <brushfire.hpp>
+#include <roadmap.hpp>
 
 #include "../includes/FuzzyControl.h"
 #include "../includes/Vision.h"
+
+#define BIG_WORLD 1
 
 static boost::mutex mutex;
 
@@ -106,6 +110,10 @@ int main(int _argc, char **_argv) {
     gazebo::transport::SubscriberPtr cameraSubscriber =
             node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackRaw, &camera);
 
+    // creates subscriber to camera with Hough circle transform
+    gazebo::transport::SubscriberPtr cameraSubscriberHough =
+            node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackHough, &camera);
+
     // Publish to the robot vel_cmd topic
     gazebo::transport::PublisherPtr movementPublisher =
             node->Advertise<gazebo::msgs::Pose>("~/pioneer2dx/vel_cmd");
@@ -121,6 +129,41 @@ int main(int _argc, char **_argv) {
     float speed = 0.0;
     float dir = 0.0;
 
+    /// If small_world is running, change the define at the top of the file to 0
+    #if BIG_WORLD == 1
+        cv::Mat world = cv::imread("../map/bigworld_floor_plan.png");
+    #else
+        cv::Mat world = cv::imread("../map/smallworld_floor_plan.png");
+    #endif
+
+    /// Generate roadmap
+    cv::Mat brushfire;
+    int maxVal = generate_brushfire(world, brushfire);
+    roadmap roadmap(brushfire, maxVal);
+
+    cv::Mat map;
+    roadmap.draw_roadmap(map);
+    roadmap.draw_world_overlay(map, world);
+
+    /// Initialize goal coordinates
+    float tgtX, tgtY, goalX = -5, goalY = -25;
+    /// Generate path
+    int pathSize = roadmap.planPath(0, 0, goalX, goalY, world, map);
+    int crntTgt = -1;
+    bool targetReached = true, goalReached = false;
+
+    /// Prepare path-image
+    cv::Mat mapView;
+    int scale = 5;
+    cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
+    cv::imshow("Roadmap with Dijkstra", mapView);
+    cv::imwrite("Roadmap with Dijkstra.png", mapView);
+
+    roadmap.drawPath(map);
+    cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
+    cv::imshow("Roadmap with path", mapView);
+    cv::imwrite("Roadmap with path.png", mapView);
+
     // Loop
     while (true) {
 
@@ -129,9 +172,34 @@ int main(int _argc, char **_argv) {
         int key = cv::waitKey(1);
         mutex.unlock();
 
-        ///////////////////////////////////////
-        controller.freeRoam(speed, dir);
-        ///////////////////////////////////////
+        //////////////////////////////////////////////////
+        /// If the end goal is reached, drive in freeRoam-mode
+        if ( goalReached ) {
+            controller.freeRoam(speed, dir);
+        }
+        else {
+            if ( targetReached ) {
+                if (crntTgt != -1) {
+                    std::cout << "Target " << crntTgt << " reached\n";
+                }
+                roadmap.navigate(crntTgt, tgtX, tgtY, goalReached, map);
+                controller.setGoal(tgtX, tgtY);
+
+                targetReached = false;
+
+                if ( goalReached ) {
+                    std::cout << "Goal reached!\n";
+                } else {
+                    std::cout << "Next target " << crntTgt << "/" << pathSize << ": (" << tgtX << " , " << tgtY << ")\n";
+                }
+            }
+            targetReached = controller.move(speed, dir);
+
+            cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
+            cv::imshow("Roadmap with path", mapView);
+        }
+
+        /////////////////////////////////////////////////
 
         // Generate a pose
         ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
@@ -141,5 +209,7 @@ int main(int _argc, char **_argv) {
         gazebo::msgs::Set(&msg, pose);
         movementPublisher->Publish(msg);
     }
+    // Make sure to shut everything down.
+    gazebo::client::shutdown();
 }
 
