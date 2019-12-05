@@ -1748,6 +1748,57 @@ int roadmap::planPath(const float rX, const float rY, const float goalX, const f
     return path.size();
 }
 
+int roadmap::improvePath(const cv::Mat& world) {
+    if (!pathCreated) {
+        return path.size();
+    }
+
+    std::vector<int> improvedPath;
+    improvedPath.push_back(path[0]);
+    std::cout << "Path node nr. " << 0 << " added.\n";
+
+    cv::Point crnt, next;
+    cv::Vec3b black = {0, 0, 0};
+    bool wallHit;
+    int pathSize = path.size();
+
+    int i = 0;
+    while ( i < pathSize-1 ) {
+        crnt.x = graph[path[i]].point.col; crnt.y = graph[path[i]].point.row;
+
+        for ( int j = i + 1; j < pathSize; j++) {
+
+            next.x = graph[path[j]].point.col; next.y = graph[path[j]].point.row;
+
+            cv::LineIterator it(world, crnt, next);
+            wallHit = false;
+            for (int l = 0; l < it.count; l++, ++it) {
+
+                if ( world.at<cv::Vec3b>(it.pos()) == black ) {
+                    wallHit = true;
+                    break;
+                }
+            }
+
+            if ( wallHit ) {
+                improvedPath.push_back(path[j-2]);
+                std::cout << "Path node nr. " << j-2 << " added.\n";
+                i = j - 2;
+                break;
+            }
+            else if ( j == pathSize - 1 ) {
+                std::cout << "Path node nr. " << j << " added.\n";
+                improvedPath.push_back(path[j]);
+                i = pathSize;
+            }
+        }
+    }
+    path.clear();
+    path = improvedPath;
+    return path.size();
+
+}
+
 void roadmap::navigate(int& pathProg, float &tgtX, float &tgtY, bool& goalReached, cv::Mat map) {
      if (pathCreated) {
         if (pathProg > -2 && pathProg < u_char(path.size() - 1)) {

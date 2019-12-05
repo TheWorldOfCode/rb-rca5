@@ -32,6 +32,7 @@ class roadmap {
         void enterMap(const float x, const float y, float& tx, float& ty, cv::Mat& world, cv::Mat& map);    // Finds the nearest intersection to the robot and sets that as a goal
         int enterPath(const float rX, const float rY, cv::Mat& world);                  // Finds the nearest intersection to the robot and returns index of intersection
 		int planPath(const float rX, const float rY, const float goalX, const float goalY, cv::Mat& world, cv::Mat& map);
+		int improvePath(const cv::Mat& world);
 		void navigate(int& pathProg, float& tgtX, float& tgtY, bool& goalReached, cv::Mat map);
         void drawPath(cv::Mat map);
 		void draw_world_overlay(cv::Mat& roadmap, cv::Mat& world);
