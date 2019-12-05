@@ -157,12 +157,12 @@ int main(int _argc, char **_argv) {
     int scale = 5;
     cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
     cv::imshow("Roadmap with Dijkstra", mapView);
-    cv::imwrite("Roadmap with Dijkstra.png", mapView);
+    cv::imwrite("RoadmapDijkstra.png", mapView);
 
     roadmap.drawPath(map);
     cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
     cv::imshow("Roadmap with path", mapView);
-    cv::imwrite("Roadmap with path.png", mapView);
+    cv::imwrite("RoadmapPath.png", mapView);
 
     // Loop
     while (true) {

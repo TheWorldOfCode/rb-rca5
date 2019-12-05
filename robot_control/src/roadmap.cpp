@@ -1812,7 +1812,7 @@ void roadmap::navigate(int& pathProg, float &tgtX, float &tgtY, bool& goalReache
             tgtX = (float(graph[nextNode].point.col) - float(roadMap.cols) / 2) * resizeFactor;
             tgtY = -(float(graph[nextNode].point.row) - float(roadMap.rows) / 2) * resizeFactor;
 
-            map.at<cv::Vec3b>(graph[nextNode].point.row, graph[nextNode].point.col) = {0, 0, 255};
+            map.at<cv::Vec3b>(graph[nextNode].point.row, graph[nextNode].point.col) = {0, 200, 255};
 
         }
         else if (pathProg == u_char(path.size() - 1)) {
@@ -1859,7 +1859,7 @@ void roadmap::drawPath(cv::Mat map) {
         for ( int i = 0; i < path.size(); i++ ) {
             x = graph[path[i]].point.col;
             y = graph[path[i]].point.row;
-            map.at<cv::Vec3b>(y, x) = {255, 0, 255};
+            map.at<cv::Vec3b>(y, x) = {50, 50, 255};
         }
     }
 }
