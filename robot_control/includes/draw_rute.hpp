@@ -6,11 +6,11 @@
 class SizeError : std::exception {
 
 	public: 
-		Empty(std::string info, std::string function, int line_number) : info(info), function(function), line_number(line_number) {}  
+		SizeError(std::string info, std::string function, int line_number) : info(info), function(function), line_number(line_number) {}
 		std::string get_info() const noexcept{ return info; }  
 		std::string get_function() const noexcept { return function; } 
 	        int get_line_number() const noexcept { return line_number; }  	
-		~Empty() {} 
+		~SizeError() {}
 	private: 
 		std::string info;
 		std::string function;
