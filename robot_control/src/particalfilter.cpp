@@ -215,17 +215,10 @@ std::tuple<const double, const double, const double> ParticleFilter::dataAssocia
 
 #if SAVE_DATA == 1
 	out << "{ \n" << "lidar data" << std::endl; 	
-#endif 
 
 	for(const std::tuple<double, double> d : lidar_data )
-	{
-
-#if SAVE_DATA == 1
 		out << "\t" << std::get<0>(d) << " " << std::get<1>(d) << std::endl; 
-#endif 
-	}
 
-#if SAVE_DATA == 1	
 	out << "}" << std::endl; 
 
 #endif
@@ -239,51 +232,55 @@ std::tuple<const double, const double, const double> ParticleFilter::dataAssocia
 
 		const vector<double> histogram  = lookup[histX][histY].distance;
 
-		if(histogram.size() == 0)
-			throw Empty("Histogram particle number " + to_string(i) + " (x,y):  (" + to_string(p->x) + ", " + to_string(p->y) + ")", "ParticleFilter::dataAssociation", 150);
+		if(histogram.size() == 0 && lookup[histX][histY].used)
+			throw Empty("Histogram particle number " + to_string(i) + " (x,y):  (" + to_string(histX) + ", " + to_string(histY) + ")", "ParticleFilter::dataAssociation", 150);
 
-		const double res = 360 / histogram.size(); 
+		if(lookup[histX][histY].used) { 
 
-
-		double w = 1;
-		for(const tuple<double, double> d : lidar_data )
-		{
-
-			int histIndex = round((get<0>(d)  + p->theta )/res);
-
-			if(histIndex < 0)
-			       histIndex += 360;
-			else if(histIndex > 359) 
-				histIndex -= 360;
-
-//			w += maximum_likelihood(histogram[histIndex], sigma, lidar_distance, lidar_distance.size()); 
-			w += maximum_likelihood(histogram[histIndex], sigma, get<1>(d)); 
-		}
+			const double res = 360 / histogram.size(); 
 
 
+			double w = 1;
+			for(const tuple<double, double> d : lidar_data )
+			{
+
+				int histIndex = round((get<0>(d)  + p->theta )/res);
+
+				if(histIndex < 0)
+					histIndex += 360;
+				else if(histIndex > 359) 
+					histIndex -= 360;
+
+				//			w += maximum_likelihood(histogram[histIndex], sigma, lidar_distance, lidar_distance.size()); 
+				w += maximum_likelihood(histogram[histIndex], sigma, get<1>(d)); 
+			}
 
 
-		eta += w;
+
+
+			eta += w;
 
 #if SAVE_DATA == 1
-		out << "{" << std::endl;
-		out << "\t index: " << i << " of " << num_particles << std::endl;   
-		out << "\t id: " << p->id << std::endl; 	
-		out << "\t x: " << p->x << std::endl; 	
-		out << "\t y: " << p->y << std::endl; 	
-		out << "\t x + offset: " << offset_x << std::endl; 	
-		out << "\t y + offset: " << offset_y << std::endl; 	
-		out << "\t hist x: " << histX << std::endl; 	
-		out << "\t hist y: " << histY << std::endl; 	
-		out << "\t Theta: " << p->theta << std::endl; 
-		out << "\t Resolutation: " << res << std::endl;  
-		out << "\t sigma: " << sigma << std::endl; 
-		out << "\t Old weight: " << p->w << std::endl; 
-		out << "\t New weight: " << w << std::endl; 
-		out << "}" << std::endl;
+			out << "{" << std::endl;
+			out << "\t index: " << i << " of " << num_particles << std::endl;   
+			out << "\t id: " << p->id << std::endl; 	
+			out << "\t x: " << p->x << std::endl; 	
+			out << "\t y: " << p->y << std::endl; 	
+			out << "\t x + offset: " << offset_x << std::endl; 	
+			out << "\t y + offset: " << offset_y << std::endl; 	
+			out << "\t hist x: " << histX << std::endl; 	
+			out << "\t hist y: " << histY << std::endl; 	
+			out << "\t Theta: " << p->theta << std::endl; 
+			out << "\t Resolutation: " << res << std::endl;  
+			out << "\t sigma: " << sigma << std::endl; 
+			out << "\t Old weight: " << p->w << std::endl; 
+			out << "\t New weight: " << w << std::endl; 
+			out << "}" << std::endl;
 #endif
 
-		p->w = w;
+			p->w = w;
+		} else
+			p->w = 0;
 	}
 
 #if SAVE_DATA == 1
@@ -339,7 +336,7 @@ double doubleRandom(double a, double b) {
 
 void ParticleFilter::resample() {
 
-	
+
 	vector<particle> M;
 	//double delta = doubleRandom(0, 1/((double) num_particles ) );
 	uniform_real_distribution<double> dis(0, 1/((double) num_particles ) );
@@ -370,25 +367,25 @@ void ParticleFilter::resample() {
 
 	num_particles = particles.size();
 	/*
-	vector<particle> copy = particles;
+	   vector<particle> copy = particles;
 
-	particles.clear();
+	   particles.clear();
 
-	vector<double> weights;
+	   vector<double> weights;
 
-	for(const particle p : copy )
-	  weights.push_back(p.w);  
-	
-	
-	std::discrete_distribution<int> weights_dist(weights.begin(), weights.end()); 
+	   for(const particle p : copy )
+	   weights.push_back(p.w);  
 
 
-	for(int i = 0; i < num_particles; i++ )
-	{
-		int index = weights_dist(gen);
-		particles.push_back(copy[index] );  
-	} */
-	
+	   std::discrete_distribution<int> weights_dist(weights.begin(), weights.end()); 
+
+
+	   for(int i = 0; i < num_particles; i++ )
+	   {
+	   int index = weights_dist(gen);
+	   particles.push_back(copy[index] );  
+	   } */
+
 }  
 
 void ParticleFilter::draw_particles(cv::Mat & map, const double res) {
@@ -580,6 +577,7 @@ void ParticleFilter::load_lookup_table2(const std::string filename, const int re
 				dis.distance.push_back(atof(line2));  
 				in.getline(line,255); 
 			} 
+			dis.used = true;
 
 			lookup[x][y] = dis;
 

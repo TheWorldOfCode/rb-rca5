@@ -28,9 +28,8 @@ void draw_rute(const cv::Mat & src, cv::Mat & dst, const std::vector<std::tuple<
 	for(const std::tuple<double, double>  d :  data )
 	{
 	       x.push_back(std::round(std::get<0>(d) / MeterPrPixel));   
-	       y.push_back(std::round(std::get<1>(d) / MeterPrPixel));   
+	       y.push_back(-1 * std::round(std::get<1>(d) / MeterPrPixel));   
 	}
-	
 	
 	draw_rute(src,dst, x, y, color, size, offset_x, offset_y);
 
