@@ -12,7 +12,7 @@ void draw_rute(const cv::Mat & src, cv::Mat & dst, const std::vector<double> x, 
 
 	for(size_t i = 0; i < x.size(); i++ )
 	{
-	     cv::Point pt(x+offset_x, y+offset_y);  
+	     cv::Point pt(x[i]+offset_x, y[i]+offset_y);
 
 	     cv::circle(dst, pt, size, color, -1,8,0); 
 	}
@@ -32,7 +32,7 @@ void draw_rute(const cv::Mat & src, cv::Mat & dst, const std::vector<std::tuple<
 	}
 	
 	
-	draw_rute(src,dst, x, y, size, color, offset_x, offset_y); 
+	draw_rute(src,dst, x, y, color, size, offset_x, offset_y);
 
 
 } 
