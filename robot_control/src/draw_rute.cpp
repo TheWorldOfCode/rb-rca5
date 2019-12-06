@@ -21,14 +21,14 @@ void draw_rute(const cv::Mat & src, cv::Mat & dst, const std::vector<double> x, 
 
 } 
 
-void draw_rute(const cv::Mat & src, cv::Mat & dst, const std::vector<std::tuple<double,  double, double>> data, const cv::Scalar color, const int size, const int offset_x , const int offset_y) {
+void draw_rute(const cv::Mat & src, cv::Mat & dst, const std::vector<std::tuple<double,  double>> data, const cv::Scalar color, const double MeterPrPixel, const int size, const int offset_x , const int offset_y) {
 
 	std::vector<double> x;
 	std::vector<double> y;
-	for(const std::tuple<double, double, double>  d :  data )
+	for(const std::tuple<double, double>  d :  data )
 	{
-	       x.push_back(std::get<0>(d));   
-	       y.push_back(std::get<1>(d));   
+	       x.push_back(std::round(std::get<0>(d) / MeterPrPixel));   
+	       y.push_back(std::round(std::get<1>(d) / MeterPrPixel));   
 	}
 	
 	

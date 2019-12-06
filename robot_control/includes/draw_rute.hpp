@@ -24,4 +24,4 @@ class SizeError : std::exception {
 void draw_rute(const cv::Mat & src, cv::Mat & dst, const std::vector<double> x, const std::vector<double> y, const cv::Scalar color, const int size = 1, const int offset_x = 0, const int offset_y = 0 ); 
 
 // data is x y theta. Theta is not used
-void draw_rute(const cv::Mat & src, cv::Mat & dst, const std::vector<std::tuple<double,  double, double>> data, const cv::Scalar color, const int size = 1, const int offset_x = 0, const int offset_y = 0 ); 
+void draw_rute(const cv::Mat & src, cv::Mat & dst, const std::vector<std::tuple<double,  double>> data, const cv::Scalar color, const double MeterPrPixel = 1, const int size = 1, const int offset_x = 0, const int offset_y = 0 ); 
