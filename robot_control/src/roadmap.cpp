@@ -1703,7 +1703,6 @@ int roadmap::planPath(const float rX, const float rY, const float goalX, const f
             int adjNode = -1;
             /// Avoid invalid roads
             if (roadsGraph[thisRoad].pt1 == -1 || roadsGraph[thisRoad].pt2 == -1) {
-                std::cout << "invalid adjNode\n";
                 continue;
             } else if (roadsGraph[thisRoad].pt1 == crntNode) {
                 adjNode = roadsGraph[thisRoad].pt2;
