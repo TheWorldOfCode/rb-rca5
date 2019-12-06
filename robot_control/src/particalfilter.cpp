@@ -40,6 +40,7 @@ void ParticleFilter::generate_lookup_table(const cv::Mat & map, const double Met
 
 		for(size_t t = 0; t < threads.size(); t++ ) { 
 			threads[t].join();  
+			std::cout << "Joining thread" << std::endl; 
 		}
 	} else
 		generate_lookup_table2(map, MeterPrPixel, max_meter, resolutation_angle, 0, lookup.size() ); 
@@ -154,7 +155,7 @@ void ParticleFilter::prediction(const float delta_t, const double std_pos[], con
 		particle * p = &particles[i];
 
 		const double new_x = p->x + velocity * delta_t * cos(p->theta * M_PI/((double) 180) + yaw_rate * delta_t);   
-		const double new_y = p->y + velocity * delta_t * sin(p->theta * M_PI/((double) 180) + yaw_rate * delta_t);   
+		const double new_y = p->y - velocity * delta_t * sin(p->theta * M_PI/((double) 180) + yaw_rate * delta_t);   
 		const double new_theta = p->theta + yaw_rate * delta_t * ((double)  180)/M_PI;
 
 		       	
@@ -194,7 +195,7 @@ void ParticleFilter::prediction(const float delta_t, const double std_pos[], con
 #endif
 }  
 
-std::tuple<const double, const double, const double> ParticleFilter::dataAssociation(std::vector<std::tuple<double, double>> lidar_data, double sigma) {
+std::tuple<const double, const double, const double> ParticleFilter::dataAssociation(std::vector<std::tuple<double, double>> lidar_data, double sigma, const double res) {
 #if DEBUG_PARTICLEFILTER == 1
 	std::cout << "Entering data Association" << std::endl; 
 #endif
@@ -216,7 +217,6 @@ std::tuple<const double, const double, const double> ParticleFilter::dataAssocia
 	out << "{ \n" << "lidar data" << std::endl; 	
 #endif 
 
-	vector<double> lidar_distance; 
 	for(const std::tuple<double, double> d : lidar_data )
 	{
 
@@ -234,7 +234,10 @@ std::tuple<const double, const double, const double> ParticleFilter::dataAssocia
 	{
 		particle * p = &particles[i];
 
-		const vector<double> histogram  = lookup[p->x + offset_x][p->y + offset_y].distance;
+		const int histX = round(p->x/res) + offset_x;
+	        const int histY = round(p->y/res) + offset_y;
+
+		const vector<double> histogram  = lookup[histX][histY].distance;
 
 		if(histogram.size() == 0)
 			throw Empty("Histogram particle number " + to_string(i) + " (x,y):  (" + to_string(p->x) + ", " + to_string(p->y) + ")", "ParticleFilter::dataAssociation", 150);
@@ -242,13 +245,19 @@ std::tuple<const double, const double, const double> ParticleFilter::dataAssocia
 		const double res = 360 / histogram.size(); 
 
 
-		double w = 0;
+		double w = 1;
 		for(const tuple<double, double> d : lidar_data )
 		{
 
-			int histIndex = round((get<0>(d) + p->theta * 180/M_PI)/res);
-			histIndex %= histogram.size(); 
-			w += maximum_likelihood(histogram[histIndex], sigma, lidar_distance, lidar_distance.size()); 
+			int histIndex = round((get<0>(d)  + p->theta )/res);
+
+			if(histIndex < 0)
+			       histIndex += 360;
+			else if(histIndex > 359) 
+				histIndex -= 360;
+
+//			w += maximum_likelihood(histogram[histIndex], sigma, lidar_distance, lidar_distance.size()); 
+			w += maximum_likelihood(histogram[histIndex], sigma, get<1>(d)); 
 		}
 
 
@@ -259,10 +268,13 @@ std::tuple<const double, const double, const double> ParticleFilter::dataAssocia
 #if SAVE_DATA == 1
 		out << "{" << std::endl;
 		out << "\t index: " << i << " of " << num_particles << std::endl;   
+		out << "\t id: " << p->id << std::endl; 	
 		out << "\t x: " << p->x << std::endl; 	
 		out << "\t y: " << p->y << std::endl; 	
-		out << "\t x + offset: " << p->x + offset_x << std::endl; 	
-		out << "\t y + offset: " << p->y + offset_y << std::endl; 	
+		out << "\t x + offset: " << offset_x << std::endl; 	
+		out << "\t y + offset: " << offset_y << std::endl; 	
+		out << "\t hist x: " << histX << std::endl; 	
+		out << "\t hist y: " << histY << std::endl; 	
 		out << "\t Theta: " << p->theta << std::endl; 
 		out << "\t Resolutation: " << res << std::endl;  
 		out << "\t sigma: " << sigma << std::endl; 
@@ -294,6 +306,7 @@ std::tuple<const double, const double, const double> ParticleFilter::dataAssocia
 	for(size_t i = 0; i < particles.size(); i++ )
 	{
 		particle * p = &particles[i];
+
 		x +=  p->x * p->w;
 		y += p->y * p->w;
 		theta += p->theta * p->w;
@@ -328,7 +341,9 @@ void ParticleFilter::resample() {
 
 	
 	vector<particle> M;
-	double delta = doubleRandom(0, 1/((double) num_particles ) );
+	//double delta = doubleRandom(0, 1/((double) num_particles ) );
+	uniform_real_distribution<double> dis(0, 1/((double) num_particles ) );
+	double delta = dis(gen);  
 	double c = particles[0].w;	
 
 	int i = 0;
@@ -354,8 +369,7 @@ void ParticleFilter::resample() {
 	particles = M;
 
 	num_particles = particles.size();
-
-/*
+	/*
 	vector<particle> copy = particles;
 
 	particles.clear();
@@ -373,10 +387,8 @@ void ParticleFilter::resample() {
 	{
 		int index = weights_dist(gen);
 		particles.push_back(copy[index] );  
-	}
+	} */
 	
-	
-*/	
 }  
 
 void ParticleFilter::draw_particles(cv::Mat & map, const double res) {
@@ -467,17 +479,32 @@ void ParticleFilter::generate_lookup_table2(const cv::Mat & map, const double Me
 				{
 
 					cv::Point p1(i,j);  
-					cv::Point p2(i + cos(angle * M_PI/180) * max_meter/MeterPrPixel, j - sin(angle* M_PI/180) * max_meter/MeterPrPixel );
+					cv::Point p2(i + cos(angle * M_PI/((double) 180 ) ) * max_meter/MeterPrPixel * 1.2, j - sin(angle* M_PI/((double) 180 ) ) * max_meter/MeterPrPixel * 1.2 );
+
 					cv::LineIterator itr(map, p1, p2 ); 
 					int count = 0;
 
-					while(itr.pos() .x > 0 && itr.pos().x < cols && itr.pos().y > 0 && itr.pos().y < rows  && map.at<cv::Vec3b>(itr.pos()) == cv::Vec3b(255,255,255) && itr.count != count  ) { 
+
+					cv::Point tmp2; 
+					while( map.at<cv::Vec3b>(itr.pos().y, itr.pos().x ) == cv::Vec3b(255,255,255) && itr.count != count  ) { 
+						tmp2 = cv::Point(itr.pos().x, itr.pos().y) ;
+
 						++count;
 						++itr;
+						const cv::Point tmp(itr.pos().x, itr.pos().y) ; 
+						const int x = tmp.x;
+						const int y = tmp.y;
+
+						if(cols - x > 0 && x < 0 ) 
+							break;
+
+						if(y < 0 && rows-y > 0) 
+							break;
 					}
 
 
-					double meter = min(count * MeterPrPixel, max_meter);
+
+					double meter = min(sqrt( (tmp2.x - p1.x) * (tmp2.x - p1.x) + (tmp2.y -p1.y) * (tmp2.y -p1.y) )* MeterPrPixel, max_meter);
 
 #if SAVE_DATA == 1
 					out << "\t"  << angle << " " << meter << " " << count << " " << itr.count   << std::endl; 
@@ -585,5 +612,15 @@ double ParticleFilter::maximum_likelihood(const double mu, const double sigma, c
 	auto sumExpression = [mu](double x) -> double{ return (x - mu) * (x - mu); };
 
 	return std::pow( 1 / (2 * M_PI * sigma*sigma), n/2) * std::exp(- (sum(data,start,n, sumExpression ))/(2 * sigma * sigma));
+
+}  
+
+
+
+double ParticleFilter::maximum_likelihood(const double mu, const double sigma, const double x) {
+
+	auto sumExpression = [mu](double x) -> double{ return (mu -x ) * ( mu - x); };
+
+	return  1 / (sqrt(2 * M_PI)  * sigma) * std::exp(- (sumExpression(x))/(2 * sigma * sigma));
 
 }  
