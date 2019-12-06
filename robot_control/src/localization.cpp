@@ -144,9 +144,6 @@ namespace localization {
 
 		std::vector<std::tuple<features_t, features_t>> connected;
 
-		int tmp1 = 0;
-		int tmp2 = 0;
-	
 		for(features_t f2 : mapFeatures )
 		{
 		   	for(features_t f1 : features )
