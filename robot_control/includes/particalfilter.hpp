@@ -9,7 +9,7 @@
 
 #define DEBUG_PARTICLEFILTER 2
 #define SAVE_DATA 1
-#define VERBOSE 0
+#define VERBOSE 1
 
 class Empty : std::exception {
 
@@ -38,7 +38,7 @@ class ParticleFilter {
 		void init(const int x, const int y, const float theta, const float std[]); 
 		void prediction(const float delta_t, const double std_pos[], const double velocity, const double yaw_rate); 
 
-		std::tuple<const double, const double, const double> dataAssociation(std::vector<std::tuple<double, double>> lidar_data, double sigma);
+		std::tuple<const double, const double, const double> dataAssociation(std::vector<std::tuple<double, double>> lidar_data, double sigma, const double res);
 
 		void resample();
 
@@ -59,7 +59,7 @@ class ParticleFilter {
 		const int offset_x;
 		const int offset_y;
 
-		int num_particles = 60;
+		int num_particles = 200;
 		struct particle {
 
 			int id; // Index
@@ -101,4 +101,5 @@ class ParticleFilter {
 
 		double maximum_likelihood(const double mu, const double sigma, const std::vector<double> x, const int n, const int start = 0); 
 		
+		double maximum_likelihood(const double mu, const double sigma, const double x); 
 }; 
