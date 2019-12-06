@@ -146,7 +146,7 @@ int main(int _argc, char **_argv) {
     roadmap.draw_world_overlay(map, world);
 
     /// Initialize goal coordinates
-    float tgtX, tgtY, goalX = -5, goalY = -25;
+    float tgtX, tgtY, goalX = 10, goalY = 25;
     /// Generate path
     int pathSize = roadmap.planPath(0, 0, goalX, goalY, world, map);
     int crntTgt = -1;
@@ -155,14 +155,14 @@ int main(int _argc, char **_argv) {
     /// Prepare path-image
     cv::Mat mapView;
     int scale = 5;
-    cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
-    cv::imshow("Roadmap with Dijkstra", mapView);
-    cv::imwrite("RoadmapDijkstra.png", mapView);
+    //cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
+    //cv::imshow("Roadmap with Dijkstra", mapView);
+    //cv::imwrite("RoadmapDijkstra.png", mapView);
 
     roadmap.drawPath(map);
     cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
     cv::imshow("Roadmap with path", mapView);
-    cv::imwrite("RoadmapPath.png", mapView);
+    cv::imwrite("RoadmapPath2.png", mapView);
 
     // Loop
     while (true) {
