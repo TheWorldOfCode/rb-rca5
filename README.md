@@ -72,24 +72,25 @@ Now you have compile you program. Or you can run the script build.sh, which crea
 
 ### Running test programs
 #### FuzzyControlFreeMarbleCollecting
-When this test program is runned, must the gazebo server run "world"
+When this test program is runned, must the gazebo server run "bigworld.world".
 #### FuzzyControlFreeRoam
-When this test program is runned, must the gazebo server run "world"
+When this test program is runned, must the gazebo server run "bigworld.world".
 #### FuzzyControlNavigationPathAndMarbles
-When this test program is runned, must the gazebo server run "world"
+When this test program is runned, must the gazebo server run "bigworld.world".
 #### FuzzyControlNavigationPathPlanning 
-When this test program is runned, must the gazebo server run "world"
+When this test program is runned, must the gazebo server run "bigworld.world".
 #### FuzzyControlNavigationPathPlanningImproved
-When this test program is runned, must the gazebo server run "world"
+When this test program is runned, must the gazebo server run "bigworld.world".
 #### particlefilterlookuptest
-This test program doesn't need gazebo to run 
+This test program doesn't need gazebo to run.
 #### particlefiltertest
-When this test program is runned, must the gazebo server run "bigworld_without_marbles.world"
+When this test program is runned, must the gazebo server run "bigworld_without_marbles.world".
 #### roadmapGeneratorTest
-This test program doesn't need gazebo to run 
+This test program doesn't need gazebo to run.
 #### roadmapNavigationTest
-When this test program is runned, must the gazebo server run "world"
-
+When this test program is runned, must the gazebo server run "bigworld.world".
+#### QLearningTest
+This test program doesn't need gazebo to run.
 
 ### Problems 
 You should beware of the cmake used absolute path, this means if you move the build folder it vil still look for the source file and header the same place as before the move. So if you will move the project remove the build folder (`rm -r build/`) and run cmake again. 
