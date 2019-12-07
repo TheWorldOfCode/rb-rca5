@@ -4,3 +4,4 @@ cmake . -Bbuild
 
 mkdir test
 mkdir test/localization
+mkdir test/TestPaths
