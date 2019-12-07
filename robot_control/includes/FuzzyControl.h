@@ -9,7 +9,7 @@
 #include <math.h>
 #include <opencv2/opencv.hpp>
 #include <gazebo/gazebo_client.hh>
-
+#define BIG_WORLD 1
 #define ENABLE_GLOBAL_POS 1
 
 class FuzzyControl
@@ -34,6 +34,7 @@ public:
 
     void drawRobotActualPath(float x, float y); /// Public because Dan might need it
     void saveRobotPathToFile(); /// Public because Dan might need it
+    void drawRobotActualPath2(float x, float y, cv::Mat& map, cv::Vec3b color = {255, 0, 0});
 
     ~FuzzyControl();
 
@@ -70,11 +71,18 @@ private:
     cv::Mat map;
     cv::Mat mapCopy;
 
+#if BIG_WORLD == 0
     float scaleFromPictureToModel =1/1.41735;
     float resizeFactor = 80;
     float combindedResizeFacotor=scaleFromPictureToModel*resizeFactor;
     float resizedWidth =20*combindedResizeFacotor*scaleFromPictureToModel; // width meaning x
     float resizedHeight =15*combindedResizeFacotor*scaleFromPictureToModel;
-
+#else
+    float scaleFromPictureToModel =1/1.41735;
+    float resizeFactor = 15;
+    float combindedResizeFacotor=scaleFromPictureToModel*resizeFactor;
+    float resizedWidth =120*combindedResizeFacotor*scaleFromPictureToModel; // width meaning x
+    float resizedHeight =80*combindedResizeFacotor*scaleFromPictureToModel;
+#endif
 };
 

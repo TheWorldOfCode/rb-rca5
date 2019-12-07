@@ -17,18 +17,68 @@ void statCallback(ConstWorldStatisticsPtr &_msg) {
     (void)_msg;
 }
 
+std::vector<std::tuple<double, double>> marbles_loc;
 void poseCallback(ConstPosesStampedPtr &_msg) {
     for (int i = 0; i < _msg->pose_size(); i++) {
-        if (_msg->pose(i).name() == "pioneer2dx") {
-
-            std::cout << std::setprecision(2) << std::fixed << std::setw(6)
-                      << _msg->pose(i).position().x() << std::setw(6)
-                      << _msg->pose(i).position().y() << std::setw(6)
-                      << _msg->pose(i).position().z() << std::setw(6)
-                      << _msg->pose(i).orientation().w() << std::setw(6)
-                      << _msg->pose(i).orientation().x() << std::setw(6)
-                      << _msg->pose(i).orientation().y() << std::setw(6)
-                      << _msg->pose(i).orientation().z() << std::endl;
+        if (_msg->pose(i).name() == "marble_clone_0") {
+            marbles_loc[0] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_1") {
+            marbles_loc[1] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_2") {
+            marbles_loc[2] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_3") {
+            marbles_loc[3] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_4") {
+            marbles_loc[4] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_5") {
+            marbles_loc[5] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_6") {
+            marbles_loc[6] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_7") {
+            marbles_loc[7] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_8") {
+            marbles_loc[8] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_9") {
+            marbles_loc[9] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_10") {
+            marbles_loc[10] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_11") {
+            marbles_loc[11] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_12") {
+            marbles_loc[12] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_13") {
+            marbles_loc[13] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_14") {
+            marbles_loc[14] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_15") {
+            marbles_loc[15] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_16") {
+            marbles_loc[16] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_17") {
+            marbles_loc[17] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_18") {
+            marbles_loc[18] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
+        }
+        if (_msg->pose(i).name() == "marble_clone_19") {
+            marbles_loc[19] = std::tuple<double,double>(_msg->pose(i).position().x(), _msg->pose(i).position().y());
         }
     }
 }
@@ -102,6 +152,11 @@ int main(int _argc, char **_argv) {
     gazebo::transport::SubscriberPtr poseSubscriber =
             node->Subscribe("~/pose/info", &FuzzyControl::poseCallbackNew, & controller);
 
+    // Marbles pos subscriber
+    marbles_loc.resize(20);
+    gazebo::transport::SubscriberPtr poseSubscriber2 =
+            node->Subscribe("~/pose/info", poseCallback);
+
     // creates subscriber to camera
     gazebo::transport::SubscriberPtr cameraSubscriber =
             node->Subscribe("~/pioneer2dx/camera/link/camera/image", &Vision::cameraCallbackRaw, &camera);
@@ -121,6 +176,16 @@ int main(int _argc, char **_argv) {
     float speed = 0.0;
     float dir = 0.0;
 
+    float robX, robY, robA;
+    float scaleFromPictureToModel =1/1.41735;
+    float resizeFactor = 15;
+    float combindedResizeFacotor=scaleFromPictureToModel*resizeFactor;
+    float resizedWidth =120*combindedResizeFacotor*scaleFromPictureToModel; // width meaning x
+    float resizedHeight =80*combindedResizeFacotor*scaleFromPictureToModel;
+
+    cv::Mat map = cv::imread("../map/bigworld_floor_plan.png");// Load smallworld map, for use in drawing the robots path
+    cv::resize(map, map, cv::Size(resizedWidth, resizedHeight), 0,0,cv::INTER_NEAREST);
+
     // Loop
     while (true) {
 
@@ -131,6 +196,21 @@ int main(int _argc, char **_argv) {
 
         ///////////////////////////////////////
         controller.freeRoam(speed, dir);
+
+        std::tie(robX, robY, robA) = controller.getCoords();
+        controller.drawRobotActualPath2(robX, robY, map);
+        for (int i = 0; i < marbles_loc.size(); i++) {
+            //std::cout << "(" << std::get<0>(marbles_loc[i]) << " , " << std::get<1>(marbles_loc[i]) << ")\n";
+            cv::Point2f positionToDraw((resizedWidth / 2 + (std::get<0>(marbles_loc[i]) * combindedResizeFacotor)),
+                                       (resizedHeight / 2 - (std::get<1>(marbles_loc[i]) * combindedResizeFacotor))); //
+            cv::circle(map, positionToDraw, 5, cv::Scalar(0, 0, 255), -1, 8, 0);
+        }
+        imshow("Path", map);
+        if (key == 27) {
+            cv::imwrite("../test/TestPaths/FuzzyRoam_Path.png", map);
+            break;
+        }
+
         ///////////////////////////////////////
 
         // Generate a pose
@@ -141,5 +221,8 @@ int main(int _argc, char **_argv) {
         gazebo::msgs::Set(&msg, pose);
         movementPublisher->Publish(msg);
     }
+    // Make sure to shut everything down.
+    gazebo::client::shutdown();
+    return 0;
 }
 

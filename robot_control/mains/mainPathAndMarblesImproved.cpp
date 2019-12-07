@@ -185,11 +185,11 @@ int main(int _argc, char **_argv) {
     float dir = 0.0;
 
     /// If small_world is running, change the define at the top of the file to 0
-    #if BIG_WORLD == 1
-        cv::Mat world = cv::imread("../map/bigworld_floor_plan.png");
-    #else
-        cv::Mat world = cv::imread("../map/smallworld_floor_plan.png");
-    #endif
+#if BIG_WORLD == 1
+    cv::Mat world = cv::imread("../map/bigworld_floor_plan.png");
+#else
+    cv::Mat world = cv::imread("../map/smallworld_floor_plan.png");
+#endif
 
     /// Generate roadmap
     cv::Mat brushfire;
@@ -201,9 +201,19 @@ int main(int _argc, char **_argv) {
     roadmap.draw_world_overlay(map, world);
 
     /// Initialize goal coordinates
-    float tgtX, tgtY, goalX = -5, goalY = -25;
+    std::tuple<float, float> goals[6] = {std::tuple<float, float>(23, 20),
+                                         std::tuple<float, float>(-5, -25),
+                                         std::tuple<float, float>(-5, -10),
+                                         std::tuple<float, float>(-40, -8),
+                                         std::tuple<float, float>(-25, 25),
+                                         std::tuple<float, float>(10, 25)};
+    int goalSize = sizeof(goals)/sizeof(goals[0]);
+
+    float tgtX, tgtY;
+    //float goalX2 = -5, goalY2 = -25, goalX = 10, goalY = 25;
     /// Generate path
-    int pathSize = roadmap.planPath(0, 0, goalX, goalY, world, map);
+    roadmap.planPath(0, 0, std::get<0>(goals[0]), std::get<1>(goals[0]), world, map);
+    int pathSize = roadmap.improvePath(world);
     int crntTgt = -1;
     bool targetReached = true, goalReached = false;
 
@@ -212,12 +222,20 @@ int main(int _argc, char **_argv) {
     int scale = 5;
     //cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
     //cv::imshow("Roadmap with Dijkstra", mapView);
-    //cv::imwrite("RoadmapDijkstra.png", mapView);
 
     roadmap.drawPath(map);
     cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
     cv::imshow("Roadmap with path", mapView);
-    cv::imwrite("RoadmapPath2.png", mapView);
+
+    /// Initialize values for marble collecting
+    float marbleDir, marbleDist;
+    bool marbleFound;
+    bool collectMode = false;
+    bool collectDone;
+    const int marbleDetectionLimit = 3;
+    int marbleDetections = 0;
+    float mX, mY, mXnew, mYnew;
+    float avgMarbleX = 0, avgMarbleY = 0;
 
     /// Print fuzzy path
     float robX, robY, robA;
@@ -232,9 +250,24 @@ int main(int _argc, char **_argv) {
     cv::Point2f positionToDraw((resizedWidth / 2 + (0) * combindedResizeFacotor),
                                (resizedHeight / 2 - (0) * combindedResizeFacotor));
     cv::circle(fuzMap, positionToDraw, 7, cv::Scalar(0, 0, 128), -1, 8, 0);
-    positionToDraw = cv::Point2f((resizedWidth / 2 + (goalX) * combindedResizeFacotor),
-                                (resizedHeight / 2 - (goalY) * combindedResizeFacotor));
-    cv::circle(fuzMap, positionToDraw, 7, cv::Scalar(0, 128, 0), -1, 8, 0);
+//    positionToDraw = cv::Point2f((resizedWidth / 2 + (goalX) * combindedResizeFacotor),
+//                                 (resizedHeight / 2 - (goalY) * combindedResizeFacotor));
+//    cv::circle(fuzMap, positionToDraw, 7, cv::Scalar(0, 128, 0), -1, 8, 0);
+//    positionToDraw = cv::Point2f((resizedWidth / 2 + (goalX2) * combindedResizeFacotor),
+//                                 (resizedHeight / 2 - (goalY2) * combindedResizeFacotor));
+//    cv::circle(fuzMap, positionToDraw, 7, cv::Scalar(128, 0, 128), -1, 8, 0);
+
+//    bool secondGoal = false;
+    for (int i = 0; i < goalSize; i++) {
+        positionToDraw = cv::Point2f((resizedWidth / 2 + std::get<0>(goals[i]) * combindedResizeFacotor),
+                                 (resizedHeight / 2 - std::get<1>(goals[i]) * combindedResizeFacotor));
+        cv::circle(fuzMap, positionToDraw, 7, cv::Scalar(0, 128, 0), -1, 8, 0);
+
+    }
+
+    int crntGoal = 0;
+    int mDrawLim = 0;
+    cv::Vec3b color{255, 0, 0};
     // Loop
     while (true) {
 
@@ -244,44 +277,143 @@ int main(int _argc, char **_argv) {
         mutex.unlock();
 
         //////////////////////////////////////////////////
-        /// If the end goal is reached, drive in freeRoam-mode
-        if ( goalReached ) {
-            controller.freeRoam(speed, dir);
+        marbleFound = false;
+        /// Marble detections will happen in the callback functions.
+        std::tie(marbleFound, marbleDir, marbleDist) = camera.getMarble();
+
+        if ( marbleFound ) {
+            if ( marbleDetections < marbleDetectionLimit ) {
+                /// Calculate global coordinates for the detected marble
+                std::tie(mXnew, mYnew) = controller.globMarble(marbleDir, marbleDist);
+
+                if ( marbleDetections == 0 ) {
+                    mX = mXnew; mY = mYnew;
+                }
+
+                /// If the detected marble is close to the previous detection, we begin calculating average position
+                if ( abs(mXnew - mX) < 0.8 && abs(mYnew - mY) < 0.8 ) {
+                    marbleDetections++;
+                    avgMarbleX += mXnew;
+                    avgMarbleY += mYnew;
+
+                    std::cout << "Marble detection " << marbleDetections << " / " << marbleDetectionLimit << "\n";
+                    std::cout << "at (" << mXnew << " , " << mYnew << ")\n\n";
+                }
+                else {
+                    marbleDetections = 0;
+                    avgMarbleX = 0; avgMarbleY = 0;
+                }
+                mX = mXnew; mY = mYnew;
+            }
+            /// If enough close detections is made, we set the average as goal and enter collect-mode.
+            if ( marbleDetections == marbleDetectionLimit ) {
+                marbleDetections++;
+                avgMarbleX /= float(marbleDetectionLimit);
+                avgMarbleY /= float(marbleDetectionLimit);
+
+                controller.setMarble(avgMarbleX, avgMarbleY);
+                collectMode = true;
+                std::cout << "Marble confirmed at (" << avgMarbleX << " , " << avgMarbleY << ")\n";
+                std::cout << "Collecting...";
+            }
+        }
+
+        if ( collectMode ) {
+            collectDone = controller.collect(speed, dir);
+            if ( collectDone ) {
+                collectMode = false;
+                avgMarbleX = 0; avgMarbleY = 0; marbleDetections = 0;
+                std::cout << "Marble collected\n\n";
+            }
         }
         else {
-            if ( targetReached ) {
-                if (crntTgt != -1) {
-                    std::cout << "Target " << crntTgt << " reached\n";
-                }
-                roadmap.navigate(crntTgt, tgtX, tgtY, goalReached, map);
-                controller.setGoal(tgtX, tgtY);
-
-                targetReached = false;
-
-                if ( goalReached ) {
-                    std::cout << "Goal reached!\n";
+            /// If the end goal is reached, drive in freeRoam-mode
+            if (goalReached) {
+                if (crntGoal == goalSize) {
+                    controller.freeRoam(speed, dir);
                 } else {
-                    std::cout << "Next target " << crntTgt << "/" << pathSize << ": (" << tgtX << " , " << tgtY << ")\n";
-                }
-            }
-            targetReached = controller.move(speed, dir);
+                    crntGoal++;
 
-            cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
-            cv::imshow("Roadmap with path", mapView);
+                    std::cout << "Current goal: " << crntGoal << "\n";
+                    roadmap.planPath(robX, robY, std::get<0>(goals[crntGoal]), std::get<1>(goals[crntGoal]), world, map);
+                    pathSize = roadmap.improvePath(world);
+                    crntTgt = -1;
+                    targetReached = true;
+                    goalReached = false;
+                    roadmap.drawPath(map);
+                    cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
+                    cv::imshow("Roadmap with path", mapView);
+
+                    switch(crntGoal) {
+                        case 1: color = cv::Vec3b{255, 0, 128}; break;
+                        case 2: color = cv::Vec3b{255, 0, 180}; break;
+                        case 3: color = cv::Vec3b{255, 0, 200}; break;
+                        case 4: color = cv::Vec3b{180, 0, 255}; break;
+                        case 5: color = cv::Vec3b{128, 0, 255}; break;
+                    }
+
+                }
+
+
+
+//                if (secondGoal) {
+//                    controller.freeRoam(speed, dir);
+//                } else {
+//
+//                    roadmap.planPath(robX, robY, goalX2, goalY2, world, map);
+//                    pathSize = roadmap.improvePath(world);
+//                    crntTgt = -1;
+//                    targetReached = true;
+//                    goalReached = false;
+//                    secondGoal = true;
+//                    roadmap.drawPath(map);
+//                    cv::resize(map, mapView, cv::Size(0,0), scale, scale, CV_INTER_AREA);
+//                    cv::imshow("Roadmap with path", mapView);
+//                }
+            } else {
+                if (targetReached) {
+                    if (crntTgt != -1) {
+                        std::cout << "Target " << crntTgt << " reached\n";
+                    }
+                    roadmap.navigate(crntTgt, tgtX, tgtY, goalReached, map);
+                    controller.setGoal(tgtX, tgtY);
+
+                    targetReached = false;
+
+                    if (goalReached) {
+                        std::cout << "Goal reached!\n";
+                    } else {
+                        std::cout << "Next target " << crntTgt << "/" << pathSize << ": (" << tgtX << " , " << tgtY
+                                  << ")\n\n";
+                    }
+                }
+                targetReached = controller.move(speed, dir);
+
+                cv::resize(map, mapView, cv::Size(0, 0), scale, scale, CV_INTER_AREA);
+                cv::imshow("Roadmap with path", mapView);
+            }
         }
 
         /// Print fuzzy path
         std::tie(robX, robY, robA) = controller.getCoords();
-        controller.drawRobotActualPath2(robX, robY, fuzMap);
-        for (int i = 0; i < marbles_loc.size(); i++) {
-            //std::cout << "(" << std::get<0>(marbles_loc[i]) << " , " << std::get<1>(marbles_loc[i]) << ")\n";
-            positionToDraw = cv::Point2f((resizedWidth / 2 + (std::get<0>(marbles_loc[i]) * combindedResizeFacotor)),
-                                       (resizedHeight / 2 - (std::get<1>(marbles_loc[i]) * combindedResizeFacotor))); //
-            cv::circle(fuzMap, positionToDraw, 5, cv::Scalar(0, 0, 255), -1, 8, 0);
+        if (collectMode) {
+            controller.drawRobotActualPath2(robX, robY, fuzMap, cv::Vec3b{0, 180, 0});
+        } else {
+            controller.drawRobotActualPath2(robX, robY, fuzMap, color);
+        }
+        if (mDrawLim < 10) {
+            mDrawLim++;
+            for (int i = 0; i < marbles_loc.size(); i++) {
+                //std::cout << "(" << std::get<0>(marbles_loc[i]) << " , " << std::get<1>(marbles_loc[i]) << ")\n";
+                positionToDraw = cv::Point2f(
+                        (resizedWidth / 2 + (std::get<0>(marbles_loc[i]) * combindedResizeFacotor)),
+                        (resizedHeight / 2 - (std::get<1>(marbles_loc[i]) * combindedResizeFacotor))); //
+                cv::circle(fuzMap, positionToDraw, 5, cv::Scalar(0, 0, 255), -1, 8, 0);
+            }
         }
         imshow("Fuzzy path", fuzMap);
         if (key == 27) {
-            cv::imwrite("../test/TestPaths/FuzzyRoam_Path.png", fuzMap);
+            cv::imwrite("../test/TestPaths/Path_Coll_Imp.png", fuzMap);
             break;
         }
         /////////////////////////////////////////////////
@@ -298,4 +430,5 @@ int main(int _argc, char **_argv) {
     gazebo::client::shutdown();
     return 0;
 }
+
 

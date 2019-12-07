@@ -425,6 +425,17 @@ FuzzyControl::~FuzzyControl() {
 
 }
 
+void FuzzyControl::drawRobotActualPath2(float x, float y, cv::Mat& map, cv::Vec3b color)
+{
+
+
+    cv::Point2f positionToDraw ((resizedWidth/2+(x*combindedResizeFacotor)), (resizedHeight/2-(y*combindedResizeFacotor))); //
+
+
+    cv::circle(map, positionToDraw, 2, color, -1,8, 0);
+}
+
+
 
 
 
