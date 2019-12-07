@@ -7,9 +7,9 @@
 #include <string>
 #include <random>
 
-#define DEBUG_PARTICLEFILTER 2
-#define SAVE_DATA 1
-#define VERBOSE 1
+#define DEBUG_PARTICLEFILTER 3
+#define SAVE_DATA 0
+#define VERBOSE 0
 
 class Empty : std::exception {
 
