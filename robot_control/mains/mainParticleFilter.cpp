@@ -7,6 +7,7 @@
 #include <opencv2/highgui/highgui.hpp>  // Video write
 #include <iostream>
 #include <vector>
+#include <fstream>
 #include <tuple>
 #include <unistd.h> 
 #include <time.h>
@@ -15,6 +16,7 @@
 #include "../includes/Vision.h"
 #include "../includes/line_detect.hpp"
 #include "../includes/particalfilter.hpp" 
+#include "../includes/draw_rute.hpp" 
 
 #define AUTO_MOVE 1
 
@@ -26,6 +28,7 @@
 
 double pos_rob_x = 0;
 double pos_rob_y = 0;
+double rob_theta = 0;
 
 static boost::mutex mutex; /// copied to Vision, but is also needed to run lidar from main
 
@@ -45,6 +48,7 @@ void poseCallback(ConstPosesStampedPtr &_msg) {
 
 			pos_rob_x = _msg->pose(i).position().x();  
 			pos_rob_y = _msg->pose(i).position().y();  
+			rob_theta = _msg->pose(i).orientation().z();   
 			/*std::cout << std::setprecision(2) << std::fixed << std::setw(6)
 			  << _msg->pose(i).position().x() << std::setw(6)
 			  << _msg->pose(i).position().y() << std::setw(6)
@@ -245,9 +249,12 @@ int main(int _argc, char **_argv) {
 	// Publish a reset of the world
 	gazebo::transport::PublisherPtr worldPublisher =
 		node->Advertise<gazebo::msgs::WorldControl>("~/world_control");
+
 	gazebo::msgs::WorldControl controlMessage;
 	controlMessage.mutable_reset()->set_all(true);
+
 	worldPublisher->WaitForConnection();
+
 	worldPublisher->Publish(controlMessage);
 
 #if DEBUG_LINE_DETECT == 1
@@ -285,22 +292,33 @@ int main(int _argc, char **_argv) {
 	cv::resize(map, map, cv::Size(), 1/1.41735 * 10, 1/1.41735 * 10); 
 	cv::imwrite("../test/localization/orignalMap.png", map );
 
-	ParticleFilter particlefilter(map.cols/2, map.rows/2) ;
+
+	const int map_offset_x = map.cols/2;
+	const int map_offset_y = map.rows/2 - 5;
+	const double MeterPrPixel = 0.1;
+	const int Max_Meter = 10;
+
+	const double sigmaData = 0.05;
+
+	ParticleFilter particlefilter(map_offset_x, map_offset_y  ) ;
 //	particlefilter.resize(map,map, 72.0/25.4, 1); 
 
 	cv::imwrite("../test/localization/newMap.png", map );
 	std::vector<cv::String> lookup_files; 
  	cv::glob("../particleFilterLookupTabel/*.txt", lookup_files, false );
-	particlefilter.load_lookup_table(lookup_files, map, 2, 8); 
-//	particlefilter.generate_lookup_table(map, 0.1, 10, 1, 12); 
+	particlefilter.load_lookup_table(lookup_files, map, 3, 8); 
+	
+	//particlefilter.generate_lookup_table(map, MeterPrPixel, Max_Meter, 1, 12); 
 
-	float std[] = {0.3, 0.3, 0.3}; 
+	float std[] = {0.1, 0.1, 0.1}; 
 	particlefilter.init(0,0, 0, std); 
 	
 	cv::Mat particles = map.clone();
 	particlefilter.draw_particles(particles, 0.1); 
 	particlefilter.draw_robot_pos(particles, pos_rob_x, pos_rob_y, 0.1);
+
 	cv::imwrite("../test/localization/particles.png", particles); 
+
 	const int key_left = 81;
 	const int key_up = 82;
 	const int key_down = 84;
@@ -313,15 +331,25 @@ int main(int _argc, char **_argv) {
 	float dir = 0.0;
 
 	clock_t time = clock() ;
+
 	double std2[] = {0.1, 0.1, 0.1};
+
 	std::tuple<double,double,double> estimat;
+
+	std::vector<std::tuple<double, double>> estimats;
+	std::vector<std::tuple<double, double>> real;
 
 	cv::VideoWriter outputVideo;  // Open the output
 	outputVideo.open("../test/localization/movie.avi", cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 20, map.size()  , true);  //30 for 30 fps
 
 
-
 	std::cout << "Entering endless loop" << std::endl; 
+
+	std::ofstream position;
+	position.open("../test/localization/position.txt");
+	position << " \t \t Real \t\t estimat" << std::endl;
+        position << " x \t y \t x \t y" << std::endl; 	
+
 	while (true) {
 
 		gazebo::common::Time::MSleep(50);     //
@@ -332,11 +360,11 @@ int main(int _argc, char **_argv) {
 		// Localization
 		clock_t newTime = clock(); 
 
-		particlefilter.prediction( ((double) (newTime - time) ) / ((double)CLOCKS_PER_SEC) , std2 ,speed * 1, dir * -1  );
+		particlefilter.prediction( ((double) (newTime - time) ) / ((double)CLOCKS_PER_SEC) , std2 ,speed * 1, dir * 1  );
 		while(flag); 
 		flag = true;
 		try { 
-			estimat = particlefilter.dataAssociation(data, 0.3); 
+			estimat = particlefilter.dataAssociation(data, sigmaData, MeterPrPixel); 
 		} catch(Empty e) {
 			std::cout << "Error " << e.get_function()  << " " << e.get_line_number() << " " << e.get_info()  << std::endl;
 			break;
@@ -345,45 +373,68 @@ int main(int _argc, char **_argv) {
 		time = newTime;
 		//
 
-		if (key == key_esc)
-			break;
+		{ 
+			if (key == key_esc)
+				break;
 
-		if ((key == key_up) && (speed <= 1.2f))
-			speed += 0.05;
-		else if ((key == key_down) && (speed >= -1.2f))
-			speed -= 0.05;
-		else if ((key == key_right) && (dir <= 0.4f))
-			dir += 0.05;
-		else if ((key == key_left) && (dir >= -0.4f))
-			dir -= 0.05;
-		else if(key == key_stop) {
-			speed = 0;
-			dir = 0;
-		
-		}  
-		//else {
-		// slow down
-		//      speed *= 0.1;
-		//      dir *= 0.1;
-		//}
+			if ((key == key_up) && (speed <= 1.2f))
+				speed += 0.05;
+			else if ((key == key_down) && (speed >= -1.2f))
+				speed -= 0.05;
+			else if ((key == key_right) && (dir <= 0.4f))
+				dir += 0.05;
+			else if ((key == key_left) && (dir >= -0.4f))
+				dir -= 0.05;
+			else if(key == key_stop) {
+				speed = 0;
+				dir = 0;
+
+			}  
+			//else {
+			// slow down
+			//      speed *= 0.1;
+			//      dir *= 0.1;
+			//}
 
 
-		// Generate a pose
-		ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
+			// Generate a pose
+			ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
 
-		// Convert to a pose message
-		gazebo::msgs::Pose msg;
-		gazebo::msgs::Set(&msg, pose);
-		movementPublisher->Publish(msg);
+			// Convert to a pose message
+			gazebo::msgs::Pose msg;
+			gazebo::msgs::Set(&msg, pose);
+			movementPublisher->Publish(msg);
+		}
 
-		particles = map.clone();
-		particlefilter.draw_particles(particles, 0.1); 
-		particlefilter.draw_robot_pos(particles, pos_rob_x, -pos_rob_y, 0.1);
-		particlefilter.draw_estime_pos(particles, std::get<0>(estimat), std::get<1>(estimat), 0.1); 
-		outputVideo << particles;
+		{ 
+			particles = map.clone();
+			particlefilter.draw_particles(particles, 0.1); 
+			particlefilter.draw_robot_pos(particles, pos_rob_x, -pos_rob_y, 0.1);
+			particlefilter.draw_estime_pos(particles, std::get<0>(estimat), std::get<1>(estimat), 0.1); 
+
+
+			estimats.push_back(std::tuple<double,double>(std::get<0>(estimat), std::get<1>(estimat)));
+			real.push_back(std::tuple<double,double>(pos_rob_x, pos_rob_y));
+		}
+
+		{ 
+			position << pos_rob_x  << " \t " << pos_rob_y << " \t " << std::get<0>(estimat) << " \t " << std::get<1>(estimat) << std::endl;    
+			outputVideo << particles;
+		}
 
 		cv::imshow("Particles", particles); 
 	}
+
+	std::cout << "Drawing path" << std::endl; 
+
+	position.close(); 
+
+
+	cv::Mat dst;
+	draw_rute(map,dst, real, cv::Scalar(255,0,0), MeterPrPixel, 2 , map_offset_x, map_offset_y); 
+	draw_rute(dst,dst, estimats, cv::Scalar(0,0,255), MeterPrPixel, 2,  map_offset_x, map_offset_y); 
+
+	cv::imwrite("../test/localization/path.png", dst); 
 
 
 # else
