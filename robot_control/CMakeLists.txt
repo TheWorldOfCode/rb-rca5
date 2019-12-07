@@ -58,7 +58,7 @@ target_link_libraries(FuzzyControlNavigationPathPlanning ${OpenCV_LIBS} ${GAZEBO
 add_executable(FuzzyControlNavigationPathPlanningImproved ${SOURCES} mains/mainPathPlanningImproved.cpp)
 target_link_libraries(FuzzyControlNavigationPathPlanningImproved ${OpenCV_LIBS} ${GAZEBO_PROTO_LIBRARIES} ${GAZEBO_LIBRARIES} ${FuzzyLib})
 
-add_executable(FuzzyControlNavigationPathPlanningImproved ${SOURCES} mains/mainPathAndMarblesImproved.cpp)
+add_executable(FuzzyControlNavigationPathAndMarblesImproved ${SOURCES} mains/mainPathAndMarblesImproved.cpp)
 target_link_libraries(FuzzyControlNavigationPathPlanningImproved ${OpenCV_LIBS} ${GAZEBO_PROTO_LIBRARIES} ${GAZEBO_LIBRARIES} ${FuzzyLib})
 
 add_executable(QLearningTest ${SOURCES} mains/mainQlearingTest.cpp)
