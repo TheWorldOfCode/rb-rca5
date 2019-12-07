@@ -68,8 +68,28 @@ make -j4
 ```
 The option `-j4` is not necessacy but tell the make program it shall used 4 threads. 
 
-Now you have compile you program. You can run it by run following line `./robot_control`. 
-You can change the name of the compiled program in the file CMakeLists.txt. 
+Now you have compile you program. Or you can run the script build.sh, which create the build folder and compile the programs, and creating test folders.
+
+### Running test programs
+#### FuzzyControlFreeMarbleCollecting
+When this test program is runned, must the gazebo server run "world"
+#### FuzzyControlFreeRoam
+When this test program is runned, must the gazebo server run "world"
+#### FuzzyControlNavigationPathAndMarbles
+When this test program is runned, must the gazebo server run "world"
+#### FuzzyControlNavigationPathPlanning 
+When this test program is runned, must the gazebo server run "world"
+#### FuzzyControlNavigationPathPlanningImproved
+When this test program is runned, must the gazebo server run "world"
+#### particlefilterlookuptest
+This test program doesn't need gazebo to run 
+#### particlefiltertest
+When this test program is runned, must the gazebo server run "bigworld_without_marbles.world"
+#### roadmapGeneratorTest
+This test program doesn't need gazebo to run 
+#### roadmapNavigationTest
+When this test program is runned, must the gazebo server run "world"
+
 
 ### Problems 
 You should beware of the cmake used absolute path, this means if you move the build folder it vil still look for the source file and header the same place as before the move. So if you will move the project remove the build folder (`rm -r build/`) and run cmake again. 
