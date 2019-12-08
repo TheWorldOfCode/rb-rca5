@@ -1,0 +1,72 @@
+#File: ObstacleAvoidancee.fll
+Engine: ObstacleAvoidance
+InputVariable: obsDir
+  enabled: true
+  range: -3.142 3.142
+  lock-range: false
+  term: left Triangle -0.293 0.785 1.963
+  term: forward Triangle -0.293 0.000 0.293
+  term: right Triangle -1.963 -0.785 0.293
+  term: behindR Ramp -1.570 -1.963
+  term: behindL Ramp 1.570 1.963
+
+InputVariable: obsDist
+  enabled: true
+  range: 0.000 10.000
+  lock-range: false
+  term: veryClose Rectangle 0.000 0.500 #0.000 0.500
+  term: close Triangle 0.495 0.500 1.120
+  term: medium Triangle 0.750 1.500 2.250
+  term: far Ramp 1.500 2.250
+
+OutputVariable: steer
+  enabled: true
+  range: -1.000 1.000
+  lock-range: false
+  aggregation: Maximum
+  defuzzifier: Centroid 100
+  default: nan
+  lock-previous: false
+  term: hardRight Ramp 0.500 1.000
+  term: right Triangle 0.000 0.750 1.000
+  term: forward Triangle -0.100 0.000 0.100
+  term: left Triangle -1.000 -0.750 0.000
+  term: hardLeft Ramp -0.500 -1.000
+
+OutputVariable: speed
+  enabled: true
+  range: -1.000 3.000
+  lock-range: false
+  aggregation: Maximum
+  defuzzifier: Centroid 100
+  default: nan
+  lock-previous: false
+  term: stop Rectangle -1.000 0.000
+  term: slow Triangle 0.050 0.600 0.700
+  term: medium Triangle 0.600 0.800 1.000
+  term: fast Ramp 1.000 3.000
+
+RuleBlock: mamdani
+  enabled: true
+  conjunction: Minimum
+  disjunction: Maximum
+  implication: AlgebraicProduct
+  activation: General
+  rule: if obsDir is left and obsDist is veryClose then steer is hardRight and speed is stop
+  rule: if obsDir is forward and obsDist is veryClose then steer is hardRight and speed is stop
+  rule: if obsDir is right and obsDist is veryClose then steer is hardLeft and speed is stop
+
+  rule: if obsDir is left and obsDist is close then steer is hardRight and speed is slow
+  rule: if obsDir is forward and obsDist is close then steer is right and speed is slow
+  rule: if obsDir is right and obsDist is close then steer is hardLeft and speed is slow
+
+  rule: if obsDir is left and obsDist is medium then steer is forward and speed is medium
+  rule: if obsDir is forward and obsDist is medium then steer is forward and speed is medium
+  rule: if obsDir is right and obsDist is medium then steer is forward and speed is medium
+
+  rule: if obsDir is left and obsDist is far then steer is forward and speed is fast
+  rule: if obsDir is forward and obsDist is far then steer is forward and speed is fast
+  rule: if obsDir is right and obsDist is far then steer is forward and speed is fast
+
+  rule: if obsDir is behindR then steer is forward and speed is fast
+  rule: if obsDir is behindL then steer is forward and speed is fast
